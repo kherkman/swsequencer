@@ -1,0 +1,1186 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Synthwave Sequencer</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto+Mono&display=swap');
+        
+        :root { 
+            --bg-color: #0d0221; --primary-color: #f0f; --secondary-color: #0ff;
+            --accent-color: #ffcc00; --text-color: #e0e0e0;
+            --border-glow: 0 0 5px var(--primary-color), 0 0 10px var(--primary-color), 0 0 15px var(--secondary-color);
+            --text-glow: 0 0 3px var(--secondary-color), 0 0 5px var(--secondary-color);
+        }
+        body { font-family: 'Roboto Mono', monospace; background-color: var(--bg-color); color: var(--text-color); display: flex; flex-direction: column; align-items: center; margin: 0; padding: 20px; overflow-x: hidden; }
+        h1 { font-family: 'Orbitron', sans-serif; color: var(--primary-color); text-shadow: var(--text-glow); letter-spacing: 2px; margin-bottom: 10px; text-align: center; }
+        
+        .controls, .song-controls, .data-controls { 
+            display: flex; flex-wrap: wrap; align-items: center; justify-content: center; 
+            gap: 8px 12px; 
+            margin-bottom: 15px; padding: 12px; 
+            background-color: rgba(26, 9, 51, 0.8); border-radius: 8px; 
+            box-shadow: var(--border-glow); width: 95%; max-width: 1100px; 
+        }
+        .controls button, .controls input[type="range"], .controls label, .controls select, .controls input[type="number"],
+        .song-controls button, .song-controls input[type="text"], .song-controls label,
+        .data-controls button, .data-controls label { 
+            font-family: 'Orbitron', sans-serif; padding: 7px 10px; 
+            border: 1px solid var(--secondary-color); background-color: var(--bg-color); 
+            color: var(--secondary-color); cursor: pointer; border-radius: 5px; 
+            transition: all 0.3s ease; box-shadow: 0 0 5px var(--secondary-color); 
+            font-size: 0.85em; 
+            vertical-align: middle; 
+        }
+        .controls button:hover, .controls select:hover, .song-controls button:hover, .data-controls button:hover { 
+            background-color: var(--secondary-color); color: var(--bg-color); 
+            box-shadow: 0 0 8px var(--primary-color), 0 0 15px var(--primary-color); 
+        }
+        .controls input[type="range"] { accent-color: var(--primary-color); min-width: 70px; padding: 0; height: 20px; }
+        .controls input[type="number"], .song-controls input[type="text"] { color: var(--accent-color); width: 55px; text-align: center; -moz-appearance: textfield; }
+        .song-controls input[type="text"] { width: 100px; }
+        .controls input[type="number"]::-webkit-outer-spin-button, .controls input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .controls select { -webkit-appearance: none; -moz-appearance: none; appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2300F0FF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.4-5.4-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 8px center; background-size: .6em auto; padding-right: 1.8em; }
+        .controls select option { background-color: var(--bg-color); color: var(--text-color); }
+        
+        .control-group { display: flex; align-items: center; gap: 5px; }
+        .input-group { 
+            display: flex; align-items: center; border: 1px solid var(--secondary-color); 
+            border-radius: 5px; padding-right: 8px; background-color: var(--bg-color); 
+            box-shadow: 0 0 5px var(--secondary-color);
+        }
+        .input-group input[type="number"], .input-group input[type="range"], .input-group select {
+            border: none !important; box-shadow: none !important; margin-right: 3px; 
+            padding: 7px 5px 7px 10px; 
+        }
+         .input-group input[type="range"] { padding-left: 5px; padding-right: 5px; }
+        .input-group .input-unit { color: var(--secondary-color); font-size: 0.9em; pointer-events: none; margin-left: 0; margin-right: 0; }
+        .input-group select { padding-right: 1.8em; }
+
+        .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+        .sequencer { display: grid; grid-template-columns: 170px auto; gap: 5px; padding: 10px; background-color: rgba(26, 9, 51, 0.5); border-radius: 8px; box-shadow: var(--border-glow); width: 95%; max-width: 1200px; overflow-x: auto; }
+        .row-label { font-family: 'Orbitron', sans-serif; font-size: 0.8em; padding: 5px; text-align: right; color: var(--accent-color); display: flex; flex-direction: column; align-items: flex-end; justify-content: space-between; gap: 2px; }
+        .row-label .instrument-name-file { display: flex; flex-direction: column; align-items: flex-end; margin-bottom: 1px;}
+        .row-label .instrument-name-file > span { margin-bottom: 2px;} 
+        .row-label .synth-sound-selector, .row-label .drum-sample-selector { 
+            font-family: 'Orbitron', sans-serif; font-size: 0.85em; padding: 1px 4px; 
+            border: 1px solid var(--secondary-color); background-color: var(--bg-color); 
+            color: var(--secondary-color); border-radius: 3px; max-width: 100%; 
+            -webkit-appearance: none; -moz-appearance: none; appearance: none; 
+            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2300F0FF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.4-5.4-12.8z%22%2F%3E%3C%2Fsvg%3E'); 
+            background-repeat: no-repeat; background-position: right 5px center; 
+            background-size: .45em auto; padding-right: 1.4em; margin-top: 3px; 
+        }
+        .row-label .synth-sound-selector option, .row-label .drum-sample-selector option { background-color: var(--bg-color); color: var(--text-color); }
+        
+        .row-label .load-sample-for-row-btn {
+            font-family: 'Roboto Mono', monospace; padding: 3px 6px; font-size: 0.75em;
+            border: 1px solid var(--secondary-color); background-color: var(--bg-color);
+            color: var(--secondary-color); border-radius: 3px; cursor: pointer;
+            margin-top: 4px; max-width: 100px; width:100%;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        .row-label .load-sample-for-row-btn:hover {
+            background-color: var(--secondary-color); color: var(--bg-color);
+            box-shadow: 0 0 6px var(--primary-color);
+        }
+
+        .row-volume-controls { display: flex; align-items: center; gap: 4px; width: 100%; justify-content: flex-end;}
+        .row-volume-slider { width: 50px; height: 14px; accent-color: var(--primary-color); padding:0;}
+        .row-volume-input { width: 35px; font-size: 0.75em; padding: 2px; text-align: center; -moz-appearance: textfield;}
+        .row-volume-input::-webkit-outer-spin-button, .row-volume-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        
+        .row-actions { display: flex; gap: 5px; width: 100%; margin-top: 3px; }
+        .row-actions button { font-family: 'Orbitron', sans-serif; padding: 5px 0; border: 1px solid var(--secondary-color); background-color: var(--bg-color); color: var(--secondary-color); cursor: pointer; border-radius: 5px; transition: all 0.3s ease; box-shadow: 0 0 5px var(--secondary-color); font-size: 0.8em; flex-grow: 1; text-align: center; }
+        .row-actions button:hover { background-color: var(--secondary-color); color: var(--bg-color); box-shadow: 0 0 8px var(--primary-color), 0 0 15px var(--primary-color); }
+
+        .steps-container { display: grid; gap: 4px; align-items: center; min-width: calc(1 * (30px + 4px)); }
+        .step { width: 30px; height: 30px; background-color: #333; border: 1px solid #555; cursor: pointer; transition: background-color 0.1s ease, box-shadow 0.2s ease; border-radius: 3px; display: flex; align-items: center; justify-content: center; }
+        .step.active { background-color: var(--primary-color); box-shadow: 0 0 8px var(--primary-color); }
+        .step.current { outline: 2px solid var(--secondary-color); box-shadow: 0 0 8px var(--secondary-color), 0 0 15px var(--secondary-color); }
+        .step.active.current { background-color: var(--accent-color); box-shadow: 0 0 8px var(--accent-color), 0 0 15px var(--accent-color); }
+        .synth-step select, .pad-step select { width: 100%; height: 100%; background-color: transparent; color: var(--text-color); border: none; font-size: 0.50em; text-align: center; -webkit-appearance: none; -moz-appearance: none; appearance: none; padding: 1px; border-radius: 0; }
+        .synth-step select option, .pad-step select option { background-color: var(--bg-color); color: var(--text-color); }
+        .synth-step.active select, .pad-step.active select { color: var(--bg-color); }
+
+        .footer { margin-top: 30px; font-size: 0.8em; color: #777; text-align: center; }
+        .footer a { color: var(--secondary-color); text-decoration: none; }
+    </style>
+</head>
+<body>
+    <h1>Synthwave Sequencer <span id="currentRiffDisplay"></span></h1>
+
+    <div class="controls">
+        <button id="playStopBtn">Play</button>
+        <div class="input-group"> 
+            <label for="tempoRangeSlider" class="visually-hidden">Tempo Slider</label>
+            <input type="range" id="tempoRangeSlider" min="40" max="240" value="70" title="Tempo Slider">
+            <label for="tempoInput" class="visually-hidden">Tempo BPM</label>
+            <input type="number" id="tempoInput" min="40" max="240" value="70" title="Beats Per Minute">
+            <span class="input-unit">BPM</span>
+        </div>
+        <button id="tapTempoBtn">Tap</button>
+        <div class="input-group"> 
+            <label for="seqLengthSelect" class="visually-hidden">Sequence Length</label>
+            <select id="seqLengthSelect" title="Number of Steps"></select>
+            <span class="input-unit">Steps</span>
+        </div>
+        <div class="control-group"> 
+            <label for="globalRootNoteSelect" class="visually-hidden">Root Note</label>
+            <select id="globalRootNoteSelect" title="Global Root Note"></select>
+            <label for="globalScaleSelect" class="visually-hidden">Scale</label>
+            <select id="globalScaleSelect" title="Global Scale"></select>
+            <button id="randomizeKeyScaleBtn" title="Randomize Key & Scale">RND Key/Scale</button>
+        </div>
+         <div class="input-group"> 
+            <label for="masterVolumeSlider" class="visually-hidden">Master Volume</label>
+            <input type="range" id="masterVolumeSlider" min="0" max="1" step="0.01" value="0.8" title="Master Volume">
+            <label for="masterVolumeInput" class="visually-hidden">Master Volume Value</label>
+            <input type="number" id="masterVolumeInput" min="0" max="1" step="0.01" value="0.8" title="Master Volume Value">
+            <span class="input-unit">Master</span>
+        </div>
+        <button id="clearPatternBtn">Clear Riff</button> 
+        <button id="generateRiffBtn">Generate Riff</button> 
+        <button id="exportMidiBtn">Export MIDI</button>
+        <button id="saveRiffFileBtn">Save Riff File</button> 
+        <label for="loadRiffFileInput" class="visually-hidden">Load Riff File</label> 
+        <input type="file" id="loadRiffFileInput" accept=".json, .swsseq" style="display: none;">
+        <button id="loadRiffFileBtn">Load Riff File</button> 
+    </div>
+
+    <div class="song-controls">
+        <label for="songStructureInput">Song Structure:</label>
+        <input type="text" id="songStructureInput" value="ABABCB" title="Define song structure (e.g., ABAB, ABC)">
+        <button id="playSongBtn">Play Song</button>
+        <span style="margin-left: 10px;">Riffs:</span>
+        <button id="editRiffABtn" class="riff-edit-btn" data-riff="A">Edit A</button>
+        <button id="editRiffBBtn" class="riff-edit-btn" data-riff="B">Edit B</button>
+        <button id="editRiffCBtn" class="riff-edit-btn" data-riff="C">Edit C</button>
+        <button id="saveToRiffABtn" class="riff-save-btn" data-riff="A">Save to A</button>
+        <button id="saveToRiffBBtn" class="riff-save-btn" data-riff="B">Save to B</button>
+        <button id="saveToRiffCBtn" class="riff-save-btn" data-riff="C">Save to C</button>
+    </div>
+
+    <div class="data-controls">
+        <button id="exportSynthSoundsBtn">Export Synth Sounds</button>
+        <label for="importSynthSoundsInput" class="visually-hidden">Import Synth Sounds File</label>
+        <input type="file" id="importSynthSoundsInput" accept=".swssynth" style="display: none;">
+        <button id="importSynthSoundsBtn">Import Synth Sounds</button>
+        <span style="margin-left: 15px;"></span>
+        <button id="exportScalesBtn">Export Scales</button>
+        <label for="importScalesInput" class="visually-hidden">Import Scales File</label>
+        <input type="file" id="importScalesInput" accept=".swsscale" style="display: none;">
+        <button id="importScalesBtn">Import Scales</button>
+    </div>
+
+
+    <div class="sequencer" id="sequencerRows">
+        <!-- Rows will be generated by JS -->
+    </div>
+    
+    <input type="file" id="hiddenSampleLoader" accept=".wav" style="display: none;">
+
+
+    <div class="footer">
+        <p>Load .wav samples or use built-in/imported synth sounds. Synths are built-in.</p>
+        <p>Samples loaded in a session are available for all drum tracks. Riff files save sample *names*, not audio data.</p>
+        <p>Save/Load Riff pattern (.json or .swsseq). Export/Import custom Synth Sounds (.swssynth) and Scales (.swsscale).</p>
+    </div>
+
+    <script>
+        let NUM_STEPS = 16; 
+        const instrumentDefs = [ 
+            { id: 'kick', name: 'Kick', defaultVol: 1.0 }, { id: 'snare', name: 'Snare', defaultVol: 1.0 },
+            { id: 'hihat', name: 'Hi-Hat', defaultVol: 0.8 }, { id: 'cymbal', name: 'Cymbal', defaultVol: 0.9 },
+            { id: 'tom1', name: 'Tom 1', defaultVol: 0.9 }, { id: 'tom2', name: 'Tom 2', defaultVol: 0.9 },
+            { id: 'bass', name: 'Bass', defaultVol: 0.7, isSynth: true, synthType: 'bass', 
+              soundOptions: ['Reso Growl', 'Classic Saw Bass', 'Deep Sine Sub', 'Square Pulse Bass', 'FM Bass Punch', 'Acid Squelch', 'Wobbly Sub', '8-Bit Bass'] },
+            { id: 'pluck', name: 'Pluck', defaultVol: 0.6, isSynth: true, synthType: 'pluck', 
+              soundOptions: ['Short Square Blip', 'Triangle Plink', 'Filtered Saw Pluck', 'Reso Ping Echo', 'Noisy Pluck', 'Kalimba Tone', 'Echo Sparkle', 'Muted Strum'] },
+            { id: 'lead', name: 'Lead', defaultVol: 0.5, isSynth: true, synthType: 'lead', 
+              soundOptions: ['Detuned PWM Lead', 'Bright Saw Lead', 'Filter Sweep Lead', 'Hollow Square Lead', 'Harmonic Lead', 'Power Fifth Lead', 'Whistle Lead', 'Retro Pulse Lead'] }, 
+            { id: 'pad', name: 'Pad', defaultVol: 0.4, isSynth: true, synthType: 'pad', 
+              soundOptions: ['Evolving Pad', 'Warm Saw Pad', 'Glassy Sine Pad', 'Lush Square Chorus', 'Slow Filter Swell', 'Ghostly Choir', 'Crystal Shards', 'Dark Drone'] }
+        ];
+        const allNotes = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+        
+        let scales = { 
+            'major': [0, 2, 4, 5, 7, 9, 11], 'minor': [0, 2, 3, 5, 7, 8, 10], 
+            'harmonicMinor': [0, 2, 3, 5, 7, 8, 11], 'melodicMinor': [0, 2, 3, 5, 7, 9, 11], 
+            'dorian': [0, 2, 3, 5, 7, 9, 10], 'phrygian': [0, 1, 3, 5, 7, 8, 10], 
+            'phrygianDominant': [0, 1, 4, 5, 7, 8, 10], 'lydian': [0, 2, 4, 6, 7, 9, 11], 
+            'lydianDominant': [0, 2, 4, 6, 7, 9, 10], 'mixolydian': [0, 2, 4, 5, 7, 9, 10], 
+            'locrian': [0, 1, 3, 5, 6, 8, 10], 'pentatonicMajor': [0, 2, 4, 7, 9], 
+            'pentatonicMinor': [0, 3, 5, 7, 10], 'blues': [0, 3, 5, 6, 7, 10], 
+            'wholeTone': [0, 2, 4, 6, 8, 10], 'diminishedHW': [0, 1, 3, 4, 6, 7, 9, 10], 
+            'diminishedWH': [0, 2, 3, 5, 6, 8, 9, 11], 'japaneseInsen': [0, 1, 5, 7, 8], 
+            'chromatic': [0,1,2,3,4,5,6,7,8,9,10,11]
+        };
+        let currentGlobalRootNote = 'C'; let currentGlobalScale = 'minor';
+        const bassNoteRange = ['-', 'C2','C#2','D2','D#2','E2','F2','F#2','G2','G#2','A2','A#2','B2','C3','C#3','D3','D#3','E3','F3','F#3','G3','G#3','A3','A#3','B3','C4'];
+        const pluckNoteRange = ['-', 'C3','C#3','D3','D#3','E3','F3','F#3','G3','G#3','A3','A#3','B3','C4','C#4','D4','D#4','E4','F4','F#4','G4','G#4','A4','A#4','B4','C5','C#5','D5','D#5','E5'];
+        const leadNoteRange = ['-', 'C3','C#3','D3','D#3','E3','F3','F#3','G3','G#3','A3','A#3','B3','C4','C#4','D4','D#4','E4','F4','F#4','G4','G#4','A4','A#4','B4','C5','C#5','D5','D#5','E5','F5','F#5','G5'];
+        const padChordRoots = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+        const padChordOctaves = ['2', '3', '4']; const padChordTypes = ['maj', 'min'];
+        let padChordRange = ['-'];
+        padChordOctaves.forEach(oct => { padChordRoots.forEach(root => { padChordTypes.forEach(type => { padChordRange.push(`${root}${oct} ${type}`); }); }); });
+        
+        let audioContext; let masterGainNode; 
+        let samples = {}; 
+        let currentLoadedSamples = {}; 
+        let globallyLoadedSampleBuffers = {}; 
+        let instrumentToLoadFor = null; 
+
+        let sequence = {}; // For drum machine style true/false steps
+        let synthSequences = { bass: Array(NUM_STEPS).fill('-'), pluck: Array(NUM_STEPS).fill('-'), lead: Array(NUM_STEPS).fill('-'), pad: Array(NUM_STEPS).fill('-') };
+        let rowVolumes = {}; let rowGainNodes = {};
+        
+        let currentSynthSounds = { bass: 'Reso Growl', pluck: 'Short Square Blip', lead: 'Detuned PWM Lead', pad: 'Evolving Pad' };
+        let customSynthSoundDefinitions = { bass: {}, pluck: {}, lead: {}, pad: {} };
+
+        let currentPadSoundSources = []; 
+        let bpm = 70; let currentStep = 0; let isPlaying = false; 
+        let schedulerIntervalId = null; let nextNoteTime = 0.0;
+        const lookahead = 25.0; const scheduleAheadTime = 0.1;
+        let whiteNoiseBuffer = null;
+
+        let songRiffs = { A: null, B: null, C: null };
+        let currentEditingRiffId = 'A'; 
+        let isSongModePlaying = false;
+        let songPlaybackStructure = []; 
+        let currentSongPartIndex = 0;   
+
+        const playStopBtn = document.getElementById('playStopBtn');
+        const tempoRangeSlider = document.getElementById('tempoRangeSlider'); const tempoInput = document.getElementById('tempoInput');
+        const tapTempoBtn = document.getElementById('tapTempoBtn'); const clearPatternBtn = document.getElementById('clearPatternBtn');
+        const exportMidiBtn = document.getElementById('exportMidiBtn'); const seqLengthSelect = document.getElementById('seqLengthSelect');
+        const masterVolumeSlider = document.getElementById('masterVolumeSlider'); const masterVolumeInput = document.getElementById('masterVolumeInput');
+        const sequencerRowsContainer = document.getElementById('sequencerRows');
+        const saveRiffFileBtn = document.getElementById('saveRiffFileBtn');
+        const loadRiffFileBtn = document.getElementById('loadRiffFileBtn');
+        const loadRiffFileInput = document.getElementById('loadRiffFileInput');
+        const globalRootNoteSelect = document.getElementById('globalRootNoteSelect');
+        const globalScaleSelect = document.getElementById('globalScaleSelect');
+        const generateRiffBtn = document.getElementById('generateRiffBtn'); 
+        const randomizeKeyScaleBtn = document.getElementById('randomizeKeyScaleBtn'); 
+        const currentRiffDisplay = document.getElementById('currentRiffDisplay');
+
+        const songStructureInput = document.getElementById('songStructureInput');
+        const playSongBtn = document.getElementById('playSongBtn');
+        const editRiffBtns = document.querySelectorAll('.riff-edit-btn');
+        const saveToRiffBtns = document.querySelectorAll('.riff-save-btn');
+
+        const exportSynthSoundsBtn = document.getElementById('exportSynthSoundsBtn');
+        const importSynthSoundsInput = document.getElementById('importSynthSoundsInput');
+        const importSynthSoundsBtn = document.getElementById('importSynthSoundsBtn');
+        const exportScalesBtn = document.getElementById('exportScalesBtn');
+        const importScalesInput = document.getElementById('importScalesInput');
+        const importScalesBtn = document.getElementById('importScalesBtn');
+        
+        const hiddenSampleLoader = document.getElementById('hiddenSampleLoader');
+
+
+        function initAudioContext() { if (!audioContext) { audioContext = new (window.AudioContext || window.webkitAudioContext)(); createWhiteNoiseBuffer(); masterGainNode = audioContext.createGain(); masterGainNode.gain.value = parseFloat(masterVolumeSlider.value); masterGainNode.connect(audioContext.destination); instrumentDefs.forEach(instr => { rowGainNodes[instr.id] = audioContext.createGain(); rowGainNodes[instr.id].gain.value = rowVolumes[instr.id] !== undefined ? rowVolumes[instr.id] : instr.defaultVol; rowGainNodes[instr.id].connect(masterGainNode); }); } }
+        function createWhiteNoiseBuffer() { if (!audioContext || whiteNoiseBuffer) return; const bufferSize = audioContext.sampleRate * 0.5; whiteNoiseBuffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate); const output = whiteNoiseBuffer.getChannelData(0); for (let i = 0; i < bufferSize; i++) { output[i] = Math.random() * 2 - 1; } }
+        
+        function populateSynthSoundSelector(synthType) {
+            const selector = document.getElementById(`${synthType}SoundSelector`);
+            if (!selector) return;
+
+            const currentVal = selector.value; 
+            selector.innerHTML = '';
+
+            const instrumentDefinition = instrumentDefs.find(def => def.synthType === synthType);
+            if (instrumentDefinition && instrumentDefinition.soundOptions) {
+                instrumentDefinition.soundOptions.forEach(opt => {
+                    const option = document.createElement('option');
+                    option.value = opt;
+                    option.textContent = opt; 
+                    selector.appendChild(option);
+                });
+            }
+
+            if (customSynthSoundDefinitions[synthType]) {
+                Object.keys(customSynthSoundDefinitions[synthType]).forEach(customSoundName => {
+                    if (!instrumentDefinition.soundOptions.includes(customSoundName)) {
+                        const option = document.createElement('option');
+                        option.value = customSoundName;
+                        option.textContent = `[C] ${customSoundName}`; 
+                        selector.appendChild(option);
+                    } else { 
+                        const existingOpt = Array.from(selector.options).find(o => o.value === customSoundName);
+                        if (existingOpt) existingOpt.textContent = `[C] ${customSoundName}`; 
+                    }
+                });
+            }
+            if (Array.from(selector.options).some(o => o.value === currentVal)) {
+                selector.value = currentVal;
+            } else if (currentSynthSounds[synthType] && Array.from(selector.options).some(o => o.value === currentSynthSounds[synthType])) {
+                selector.value = currentSynthSounds[synthType];
+            } else if (selector.options.length > 0) {
+                 selector.value = selector.options[0].value;
+                 currentSynthSounds[synthType] = selector.value;
+            }
+        }
+
+        function updateAllSynthSoundSelectors() {
+            instrumentDefs.forEach(instr => {
+                if (instr.isSynth) {
+                    populateSynthSoundSelector(instr.synthType);
+                }
+            });
+        }
+
+        function populateDrumSampleSelectors() {
+            instrumentDefs.forEach(instr => {
+                if (!instr.isSynth) {
+                    const selectElement = document.getElementById(`${instr.id}SampleSelector`);
+                    if (!selectElement) return;
+
+                    const currentSelectedFile = currentLoadedSamples[instr.id];
+                    selectElement.innerHTML = ''; 
+
+                    const noneOption = document.createElement('option');
+                    noneOption.value = "";
+                    noneOption.textContent = "- None -";
+                    selectElement.appendChild(noneOption);
+
+                    Object.keys(globallyLoadedSampleBuffers).forEach(fileName => {
+                        const option = document.createElement('option');
+                        option.value = fileName;
+                        option.textContent = fileName;
+                        selectElement.appendChild(option);
+                    });
+                    
+                    if (currentSelectedFile && globallyLoadedSampleBuffers[currentSelectedFile]) {
+                        selectElement.value = currentSelectedFile;
+                    } else if (currentSelectedFile) { // File name known, but buffer not loaded in this session
+                        // Add it as an option so the name is visible, but it won't play until re-loaded
+                        let found = false;
+                        for(let opt of selectElement.options) {
+                            if(opt.value === currentSelectedFile) {
+                                found = true;
+                                break;
+                            }
+                        }
+                        if(!found) {
+                            const missingOption = document.createElement('option');
+                            missingOption.value = currentSelectedFile;
+                            missingOption.textContent = `${currentSelectedFile} (Load needed)`;
+                            missingOption.style.fontStyle = 'italic';
+                            selectElement.appendChild(missingOption);
+                        }
+                        selectElement.value = currentSelectedFile;
+                    } else {
+                         selectElement.value = ""; 
+                    }
+                }
+            });
+        }
+
+
+        function generateSequencerRowsHTML() { 
+            sequencerRowsContainer.innerHTML = ''; 
+            instrumentDefs.forEach(instr => { 
+                const rowLabelDiv = document.createElement('div'); rowLabelDiv.classList.add('row-label'); 
+                const nameFileDiv = document.createElement('div'); nameFileDiv.classList.add('instrument-name-file'); 
+                const nameSpan = document.createElement('span'); nameSpan.textContent = instr.name; 
+                nameFileDiv.appendChild(nameSpan); 
+                if (instr.isSynth) { 
+                    const soundSelect = document.createElement('select'); 
+                    const synthTypeKey = instr.synthType || instr.id; 
+                    soundSelect.id = `${synthTypeKey}SoundSelector`; soundSelect.classList.add('synth-sound-selector'); 
+                    soundSelect.addEventListener('change', (e) => { 
+                        currentSynthSounds[synthTypeKey] = e.target.value; 
+                        if (synthTypeKey === 'pad' && (isPlaying || isSongModePlaying) && audioContext) { 
+                            stopAllPadSounds(0.05); 
+                            const activeChord = synthSequences.pad[currentStep]; 
+                            if (activeChord !== '-') playPadChord(activeChord, audioContext.currentTime + 0.06); 
+                        } 
+                    }); 
+                    nameFileDiv.appendChild(soundSelect); 
+                } else { 
+                    const sampleSelect = document.createElement('select');
+                    sampleSelect.id = `${instr.id}SampleSelector`;
+                    sampleSelect.classList.add('drum-sample-selector');
+                    sampleSelect.title = `Select sample for ${instr.name}`;
+                    sampleSelect.addEventListener('change', (e) => {
+                        const selectedFileName = e.target.value;
+                        if (selectedFileName && globallyLoadedSampleBuffers[selectedFileName]) {
+                            samples[instr.id] = globallyLoadedSampleBuffers[selectedFileName];
+                            currentLoadedSamples[instr.id] = selectedFileName;
+                        } else if (selectedFileName) { // Name selected, but buffer not loaded
+                            samples[instr.id] = null;
+                            currentLoadedSamples[instr.id] = selectedFileName; // Keep the name, user needs to load it
+                             alert(`Sample "${selectedFileName}" for ${instr.name} is not loaded in this session. Please use the 'Load...' button to load it.`);
+                        }
+                         else {
+                            samples[instr.id] = null;
+                            currentLoadedSamples[instr.id] = null;
+                        }
+                    });
+                    nameFileDiv.appendChild(sampleSelect);
+
+                    const loadButton = document.createElement('button');
+                    loadButton.classList.add('load-sample-for-row-btn');
+                    loadButton.dataset.instrumentId = instr.id;
+                    loadButton.textContent = 'Load...';
+                    loadButton.title = `Load new WAV for ${instr.name}`;
+                    loadButton.addEventListener('click', () => {
+                        instrumentToLoadFor = instr.id;
+                        hiddenSampleLoader.click();
+                    });
+                    nameFileDiv.appendChild(loadButton);
+                } 
+                rowLabelDiv.appendChild(nameFileDiv); 
+                const volumeControlsDiv = document.createElement('div'); volumeControlsDiv.classList.add('row-volume-controls'); 
+                const volRange = document.createElement('input'); volRange.type = 'range'; volRange.id = `${instr.id}VolumeRange`; volRange.classList.add('row-volume-slider'); volRange.min = "0"; volRange.max = "1"; volRange.step = "0.01"; volRange.value = rowVolumes[instr.id] !== undefined ? rowVolumes[instr.id] : instr.defaultVol; volRange.title = `${instr.name} Volume`; 
+                const volInput = document.createElement('input'); volInput.type = 'number'; volInput.id = `${instr.id}VolumeInput`; volInput.classList.add('row-volume-input'); volInput.min = "0"; volInput.max = "1"; volInput.step = "0.01"; volInput.value = volRange.value; volInput.title = `${instr.name} Volume Value`; 
+                volRange.addEventListener('input', (e) => handleRowVolumeChange(instr.id, parseFloat(e.target.value))); 
+                volInput.addEventListener('input', (e) => { let val = parseFloat(e.target.value); if (!isNaN(val)) handleRowVolumeChange(instr.id, Math.max(0, Math.min(1, val))); }); 
+                volInput.addEventListener('change', (e) => { let val = parseFloat(e.target.value); val = isNaN(val) ? (rowVolumes[instr.id] !== undefined ? rowVolumes[instr.id] : instr.defaultVol) : Math.max(0, Math.min(1, val)); e.target.value = val.toFixed(2); handleRowVolumeChange(instr.id, val); }); 
+                volumeControlsDiv.appendChild(volRange); volumeControlsDiv.appendChild(volInput); 
+                rowLabelDiv.appendChild(volumeControlsDiv); 
+                const rowActionsDiv = document.createElement('div'); rowActionsDiv.classList.add('row-actions'); 
+                const randomBtn = document.createElement('button'); randomBtn.textContent = 'RND'; randomBtn.title = `Randomize ${instr.name}`; randomBtn.addEventListener('click', () => randomizeRow(instr)); 
+                rowActionsDiv.appendChild(randomBtn); 
+                const clearRowBtn = document.createElement('button'); clearRowBtn.textContent = 'CLR'; clearRowBtn.title = `Clear ${instr.name}`; clearRowBtn.addEventListener('click', () => clearSingleRow(instr)); 
+                rowActionsDiv.appendChild(clearRowBtn); 
+                rowLabelDiv.appendChild(rowActionsDiv); 
+                sequencerRowsContainer.appendChild(rowLabelDiv); 
+                const stepsContainer = document.createElement('div'); stepsContainer.classList.add('steps-container'); stepsContainer.id = `${instr.id}Steps`; 
+                sequencerRowsContainer.appendChild(stepsContainer); 
+                if(rowVolumes[instr.id] === undefined) rowVolumes[instr.id] = instr.defaultVol; 
+            }); 
+            updateAllSynthSoundSelectors(); 
+            populateDrumSampleSelectors();
+        }
+
+        function createSequencerGrid() { 
+            instrumentDefs.forEach(instr => { 
+                const container = document.getElementById(`${instr.id}Steps`); 
+                if (!container) { 
+                    console.error(`Container for ${instr.id}Steps not found!`); return; 
+                } 
+                container.innerHTML = ''; 
+                container.style.gridTemplateColumns = `repeat(${NUM_STEPS}, 1fr)`; 
+                container.style.minWidth = `calc(${NUM_STEPS} * (30px + 4px))`; 
+                if (instr.isSynth) { 
+                    const currentSeqArray = synthSequences[instr.synthType]; let noteOrChordRange; 
+                    if (instr.synthType === 'bass') noteOrChordRange = bassNoteRange; 
+                    else if (instr.synthType === 'pluck') noteOrChordRange = pluckNoteRange; 
+                    else if (instr.synthType === 'lead') noteOrChordRange = leadNoteRange; 
+                    else if (instr.synthType === 'pad') noteOrChordRange = padChordRange; 
+                    else noteOrChordRange = pluckNoteRange; 
+                    if (!currentSeqArray || currentSeqArray.length !== NUM_STEPS) { 
+                        const oldPattern = currentSeqArray || []; 
+                        synthSequences[instr.synthType] = Array(NUM_STEPS).fill('-'); 
+                        for(let i=0; i < Math.min(oldPattern.length, NUM_STEPS); i++) {
+                            synthSequences[instr.synthType][i] = oldPattern[i];
+                        }
+                    } 
+                    if (instr.synthType === 'pad') { 
+                        for (let i = 0; i < NUM_STEPS; i++) createPadStepDOM(container, i, noteOrChordRange, synthSequences.pad); 
+                    } else { 
+                        for (let i = 0; i < NUM_STEPS; i++) createSynthStepDOM(container, instr.synthType, i, noteOrChordRange, synthSequences[instr.synthType]); 
+                    } 
+                } else { // Drum instrument
+                    if (!sequence[instr.id] || sequence[instr.id].length !== NUM_STEPS) { 
+                        const oldPattern = sequence[instr.id] || []; 
+                        sequence[instr.id] = Array(NUM_STEPS).fill(false); 
+                        for(let i=0; i < Math.min(oldPattern.length, NUM_STEPS); i++) {
+                            sequence[instr.id][i] = oldPattern[i];
+                        }
+                    } 
+                    for (let i = 0; i < NUM_STEPS; i++) {
+                        createDrumStepDOM(container, instr.id, i); 
+                    } 
+                } 
+            }); 
+            if (currentStep >= NUM_STEPS) currentStep = 0; 
+        }
+        function createDrumStepDOM(container, instrumentId, stepIndex) { const step = document.createElement('div'); step.classList.add('step'); if (sequence[instrumentId] && sequence[instrumentId][stepIndex]) step.classList.add('active'); step.dataset.instrument = instrumentId; step.dataset.step = stepIndex; step.addEventListener('click', toggleStep); container.appendChild(step); }
+        function createSynthStepDOM(container, synthType, stepIndex, noteRangeArray, sequenceArray) { const stepDiv = document.createElement('div'); stepDiv.classList.add('step', 'synth-step'); if (sequenceArray[stepIndex] !== '-') stepDiv.classList.add('active'); stepDiv.dataset.instrument = synthType; stepDiv.dataset.step = stepIndex; const select = document.createElement('select'); select.dataset.step = stepIndex; noteRangeArray.forEach(note => { const option = document.createElement('option'); option.value = note; option.textContent = note; select.appendChild(option); }); select.value = sequenceArray[stepIndex]; select.addEventListener('change', (e) => { sequenceArray[stepIndex] = e.target.value; stepDiv.classList.toggle('active', e.target.value !== '-'); }); stepDiv.addEventListener('click', (e) => { if (e.target === stepDiv) { const currentNote = sequenceArray[stepIndex]; let defaultNote = 'C4'; if (synthType === 'bass') defaultNote = 'C3'; if (currentNote === '-') { select.value = defaultNote; sequenceArray[stepIndex] = defaultNote; stepDiv.classList.add('active'); } else { select.value = '-'; sequenceArray[stepIndex] = '-'; stepDiv.classList.remove('active'); } } }); stepDiv.appendChild(select); container.appendChild(stepDiv); }
+        function createPadStepDOM(container, stepIndex, chordRangeArray, sequenceArray) { const stepDiv = document.createElement('div'); stepDiv.classList.add('step', 'pad-step'); if (sequenceArray[stepIndex] !== '-') stepDiv.classList.add('active'); stepDiv.dataset.instrument = 'pad'; stepDiv.dataset.step = stepIndex; const select = document.createElement('select'); select.dataset.step = stepIndex; chordRangeArray.forEach(chord => { const option = document.createElement('option'); option.value = chord; option.textContent = chord; select.appendChild(option); }); select.value = sequenceArray[stepIndex]; select.addEventListener('change', (e) => { sequenceArray[stepIndex] = e.target.value; stepDiv.classList.toggle('active', e.target.value !== '-'); }); stepDiv.addEventListener('click', (e) => { if (e.target === stepDiv) { const currentChord = sequenceArray[stepIndex]; const defaultChord = 'C3 maj'; if (currentChord === '-') { select.value = defaultChord; sequenceArray[stepIndex] = defaultChord; stepDiv.classList.add('active'); }  else { select.value = '-'; sequenceArray[stepIndex] = '-'; stepDiv.classList.remove('active'); } } }); stepDiv.appendChild(select); container.appendChild(stepDiv); }
+        
+        hiddenSampleLoader.addEventListener('change', async (event) => {
+            if (!instrumentToLoadFor || !event.target.files || event.target.files.length === 0) {
+                instrumentToLoadFor = null;
+                hiddenSampleLoader.value = ''; 
+                return;
+            }
+            initAudioContext();
+            const file = event.target.files[0];
+            const targetInstrumentId = instrumentToLoadFor;
+            instrumentToLoadFor = null; 
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const audioBuffer = await audioContext.decodeAudioData(e.target.result);
+                    globallyLoadedSampleBuffers[file.name] = audioBuffer;
+                    samples[targetInstrumentId] = audioBuffer;
+                    currentLoadedSamples[targetInstrumentId] = file.name;
+                    
+                    populateDrumSampleSelectors(); 
+                    const targetSelector = document.getElementById(`${targetInstrumentId}SampleSelector`);
+                    if (targetSelector) targetSelector.value = file.name;
+
+                    alert(`Sample "${file.name}" loaded for ${instrumentDefs.find(i=>i.id===targetInstrumentId).name}.`);
+
+                } catch (err) {
+                    alert(`Could not load sample "${file.name}". Ensure it's a valid WAV file.\nError: ${err.message}`);
+                    if (currentLoadedSamples[targetInstrumentId] === file.name) {
+                        samples[targetInstrumentId] = null;
+                        currentLoadedSamples[targetInstrumentId] = null;
+                        const targetSelector = document.getElementById(`${targetInstrumentId}SampleSelector`);
+                        if (targetSelector) targetSelector.value = ""; 
+                    }
+                }
+            };
+            reader.readAsArrayBuffer(file);
+            hiddenSampleLoader.value = ''; 
+        });
+
+        function toggleStep(e) { initAudioContext(); const stepElement = e.target.closest('.step'); if (!stepElement) return; const instrument = stepElement.dataset.instrument; const stepIndex = parseInt(stepElement.dataset.step); const def = instrumentDefs.find(d => d.id === instrument || d.synthType === instrument); if (def && def.isSynth) return; if (!sequence[instrument]) sequence[instrument] = Array(NUM_STEPS).fill(false); sequence[instrument][stepIndex] = !sequence[instrument][stepIndex]; stepElement.classList.toggle('active', sequence[instrument][stepIndex]); }
+        function handleMasterVolumeChange(volume) { if (audioContext && masterGainNode) masterGainNode.gain.value = volume; masterVolumeSlider.value = volume; masterVolumeInput.value = volume.toFixed(2); }
+        function handleRowVolumeChange(instrumentId, volume) { rowVolumes[instrumentId] = volume; if (audioContext && rowGainNodes[instrumentId]) rowGainNodes[instrumentId].gain.value = volume; const rangeSlider = document.getElementById(`${instrumentId}VolumeRange`); const numInput = document.getElementById(`${instrumentId}VolumeInput`); if(rangeSlider) rangeSlider.value = volume; if(numInput) numInput.value = volume.toFixed(2); }
+        function playSound(instrumentName, time) { if (!audioContext || !rowGainNodes[instrumentName]) return; if (samples[instrumentName]) { const source = audioContext.createBufferSource(); source.buffer = samples[instrumentName]; source.connect(rowGainNodes[instrumentName]); source.start(time); } else { playFallbackDrumSound(instrumentName, time); } }
+        function playFallbackDrumSound(instrument, time) { if (!audioContext || !rowGainNodes[instrument]) return; let osc, gain, noiseSource, filter; gain = audioContext.createGain(); gain.connect(rowGainNodes[instrument]); switch(instrument) { case 'kick': osc = audioContext.createOscillator(); osc.type = 'sine'; osc.frequency.setValueAtTime(120, time); osc.frequency.exponentialRampToValueAtTime(40, time + 0.15); gain.gain.setValueAtTime(0.8, time); gain.gain.exponentialRampToValueAtTime(0.001, time + 0.25); osc.connect(gain); osc.start(time); osc.stop(time + 0.25); break; case 'snare': noiseSource = audioContext.createBufferSource(); noiseSource.buffer = whiteNoiseBuffer; filter = audioContext.createBiquadFilter(); filter.type = 'highpass'; filter.frequency.value = 1000; noiseSource.connect(filter); filter.connect(gain); gain.gain.setValueAtTime(0.4, time); gain.gain.exponentialRampToValueAtTime(0.001, time + 0.15); noiseSource.start(time); noiseSource.stop(time + 0.15); const bodyOsc = audioContext.createOscillator(); bodyOsc.type = 'triangle'; bodyOsc.frequency.setValueAtTime(180, time); const bodyGain = audioContext.createGain(); bodyGain.gain.setValueAtTime(0.3, time); bodyGain.gain.exponentialRampToValueAtTime(0.001, time + 0.1); bodyOsc.connect(bodyGain); bodyGain.connect(rowGainNodes[instrument]); bodyOsc.start(time); bodyOsc.stop(time + 0.1); break; case 'hihat': noiseSource = audioContext.createBufferSource(); noiseSource.buffer = whiteNoiseBuffer; filter = audioContext.createBiquadFilter(); filter.type = 'highpass'; filter.frequency.value = 7000; noiseSource.connect(filter); filter.connect(gain); gain.gain.setValueAtTime(0.2, time); gain.gain.exponentialRampToValueAtTime(0.001, time + 0.05); noiseSource.start(time); noiseSource.stop(time + 0.05); break; case 'cymbal':  noiseSource = audioContext.createBufferSource(); noiseSource.buffer = whiteNoiseBuffer; filter = audioContext.createBiquadFilter(); filter.type = 'bandpass'; filter.frequency.value = 6000; filter.Q.value = 0.5; noiseSource.connect(filter); filter.connect(gain); gain.gain.setValueAtTime(0.3, time); gain.gain.exponentialRampToValueAtTime(0.001, time + 0.8); noiseSource.start(time); noiseSource.stop(time + 0.8); break; case 'tom1': osc = audioContext.createOscillator(); osc.type = 'sine'; osc.frequency.setValueAtTime(200, time); osc.frequency.exponentialRampToValueAtTime(100, time + 0.2); gain.gain.setValueAtTime(0.6, time); gain.gain.exponentialRampToValueAtTime(0.001, time + 0.3); osc.connect(gain); osc.start(time); osc.stop(time + 0.3); break; case 'tom2': osc = audioContext.createOscillator(); osc.type = 'sine'; osc.frequency.setValueAtTime(150, time); osc.frequency.exponentialRampToValueAtTime(75, time + 0.25); gain.gain.setValueAtTime(0.6, time); gain.gain.exponentialRampToValueAtTime(0.001, time + 0.35); osc.connect(gain); osc.start(time); osc.stop(time + 0.35); break;} }
+        
+        function playSynthNote(synthId, note, time) {
+            if (note === '-' || !audioContext || !rowGainNodes[synthId]) return;
+
+            const selectedSoundName = currentSynthSounds[synthId];
+            const customSoundParams = customSynthSoundDefinitions[synthId] && customSynthSoundDefinitions[synthId][selectedSoundName] 
+                                      ? customSynthSoundDefinitions[synthId][selectedSoundName] 
+                                      : {};
+
+            const oscs = [];
+            const adsrGainNode = audioContext.createGain();
+            let filterNode = null; let lfo = null, lfoGain = null; let noiseOsc = null, noiseGain = null;
+            
+            let baseOscType = customSoundParams.baseOscType || 'sawtooth';
+            let numOscillators = customSoundParams.numOscillators || 1;
+            let detuneBase = customSoundParams.detuneBase || 0;
+            let detuneSpread = customSoundParams.detuneSpread || 7;
+            let attackTime = customSoundParams.attackTime || 0.01;
+            let decayTime = customSoundParams.decayTime || 0.2;
+            let sustainLevel = customSoundParams.sustainLevel || 0.7;
+            let releaseTime = customSoundParams.releaseTime || 0.3;
+            let peakGain = customSoundParams.peakGain || 0.5;
+            let filterType = customSoundParams.filterType || 'lowpass';
+            let filterCutoff = customSoundParams.filterCutoff || 20000;
+            let filterQ = customSoundParams.filterQ || 1;
+            let filterEnvAttackTime = customSoundParams.filterEnvAttackTime || 0.01;
+            let filterEnvDecayTime = customSoundParams.filterEnvDecayTime || 0.1;
+            let filterEnvSustainLevel = customSoundParams.filterEnvSustainLevel || 1;
+            let filterEnvReleaseTime = customSoundParams.filterEnvReleaseTime || 0.2;
+            let filterEnvAmount = customSoundParams.filterEnvAmount || 0;
+            let filterLfoRate = customSoundParams.filterLfoRate || 0;
+            let filterLfoDepth = customSoundParams.filterLfoDepth || 0;
+            let noiseMix = customSoundParams.noiseMix || 0;
+            let secondOscType = customSoundParams.secondOscType || null;
+            let secondOscDetune = customSoundParams.secondOscDetune || 0;
+            let secondOscPitchRatio = customSoundParams.secondOscPitchRatio || 1;
+
+            if (!customSoundParams.baseOscType) { 
+                if (synthId === 'bass') {
+                    peakGain = 0.4; decayTime = 0.25; releaseTime = 0.28; sustainLevel = 0.5; 
+                    switch(selectedSoundName) {
+                        case 'Classic Saw Bass': baseOscType = 'sawtooth'; break;
+                        case 'Deep Sine Sub': baseOscType = 'sine'; peakGain = 0.6; break;
+                        case 'Square Pulse Bass': baseOscType = 'square'; break;
+                        case 'Reso Growl': baseOscType = 'sawtooth'; filterCutoff = 700; filterQ = 12; filterEnvAmount = 1800; filterEnvDecayTime = 0.15; sustainLevel = 0.1; filterLfoRate = 5; filterLfoDepth = 100; break;
+                        case 'FM Bass Punch': baseOscType = 'sine'; attackTime=0.005; decayTime=0.1; releaseTime=0.1; sustainLevel=0.01; filterCutoff = 2000; filterEnvAmount = 1000; break;
+                        case 'Acid Squelch': baseOscType = 'square'; filterCutoff = 300; filterQ = 18; filterEnvAmount = 3500; filterEnvAttackTime = 0.005; filterEnvDecayTime = 0.1; filterEnvSustainLevel = 0.01; attackTime = 0.005; decayTime = 0.15; sustainLevel = 0.01; releaseTime = 0.1; peakGain = 0.35; break;
+                        case 'Wobbly Sub': baseOscType = 'sine'; numOscillators = 2; detuneSpread = 2; peakGain = 0.6; filterLfoRate = 0.5 + Math.random() * 1; filterLfoDepth = 200; filterCutoff = 800; filterQ = 1; break;
+                        case '8-Bit Bass': baseOscType = 'square'; attackTime = 0.001; decayTime = 0.1; sustainLevel = 0.001; releaseTime = 0.05; peakGain = 0.4; filterCutoff = 3000; break;
+                        default: baseOscType = 'sawtooth'; 
+                    }
+                } else if (synthId === 'pluck') {
+                    peakGain = 0.4; attackTime=0.005; decayTime = 0.1; sustainLevel = 0.001; releaseTime = 0.15; 
+                    filterCutoff = 6000; filterQ = 1; filterEnvAmount = 5000; filterEnvDecayTime = 0.08;
+                    switch(selectedSoundName) {
+                        case 'Triangle Plink': baseOscType = 'triangle'; break;
+                        case 'Short Square Blip': baseOscType = 'square'; peakGain = 0.3; filterEnvAmount=3000; break;
+                        case 'Filtered Saw Pluck': baseOscType = 'sawtooth'; filterEnvAmount=7000; filterEnvDecayTime=0.05; break;
+                        case 'Reso Ping Echo': baseOscType = 'sine'; filterQ = 15; filterCutoff = 7000; filterEnvAmount=6000; decayTime=0.05; releaseTime=0.4; sustainLevel=0.0001; peakGain=0.5; break;
+                        case 'Noisy Pluck': baseOscType = 'triangle'; noiseMix = 0.3; peakGain = 0.3; filterCutoff = 4000; filterEnvAmount = 3000; break;
+                        case 'Kalimba Tone': baseOscType = 'sine'; numOscillators = 2; secondOscType = 'triangle'; secondOscPitchRatio = 1.02; detuneSpread = 1; peakGain = 0.5; decayTime = 0.2; releaseTime = 0.2; filterCutoff = 8000; filterEnvAmount = 1000; break;
+                        case 'Echo Sparkle': baseOscType = 'sawtooth'; peakGain = 0.3; releaseTime = 0.6; sustainLevel = 0.001; filterLfoRate = 8; filterLfoDepth = 1500; filterCutoff = 2000; filterQ = 2; filterEnvAmount = 6000; filterEnvDecayTime = 0.3; break;
+                        case 'Muted Strum': baseOscType = 'sine'; noiseMix = 0.5; peakGain = 0.35; attackTime = 0.01; decayTime = 0.08; releaseTime = 0.05; filterCutoff = 1500; filterQ = 3; filterEnvAmount = 1000; break;
+                        default: baseOscType = 'triangle'; 
+                    }
+                } else if (synthId === 'lead') {
+                    peakGain = 0.3; attackTime = 0.02; decayTime = 0.15; sustainLevel = 0.8; releaseTime = 0.4; 
+                    filterCutoff = 7000; filterQ = 0.7;
+                    switch(selectedSoundName) {
+                        case 'Bright Saw Lead': baseOscType = 'sawtooth'; break;
+                        case 'Detuned PWM Lead': baseOscType = 'sawtooth'; numOscillators = 2; detuneSpread = 8; peakGain = 0.2; filterLfoRate = 5; filterLfoDepth = 800; break; 
+                        case 'Filter Sweep Lead': baseOscType = 'sawtooth'; filterCutoff = 300; filterEnvAmount = 8000; filterEnvAttackTime = 0.1; filterEnvDecayTime = 0.4; sustainLevel = 0.5; break;
+                        case 'Hollow Square Lead': baseOscType = 'square'; peakGain = 0.25; filterCutoff = 3000; filterQ = 2; break;
+                        case 'Harmonic Lead': baseOscType = 'square'; numOscillators = 2; secondOscType = 'sine'; secondOscPitchRatio = 1.5; peakGain = 0.2; filterCutoff = 4000; filterEnvAmount = 2000; break;
+                        case 'Power Fifth Lead': baseOscType = 'sawtooth'; numOscillators = 2; secondOscType = 'sawtooth'; secondOscPitchRatio = 1.5; detuneSpread = 3; peakGain = 0.25; break;
+                        case 'Whistle Lead': baseOscType = 'sine'; peakGain = 0.4; filterLfoRate = 6; filterLfoDepth = 15; sustainLevel = 0.6; releaseTime = 0.1; noiseMix = 0.05; filterCutoff=10000; break; 
+                        case 'Retro Pulse Lead': baseOscType = 'pulse'; attackTime=0.005; decayTime = 0.05; sustainLevel=0.2; releaseTime=0.1; filterLfoRate = 10; filterLfoDepth = 2000; filterCutoff = 1000; peakGain = 0.28; break; 
+                        default: baseOscType = 'sawtooth'; 
+                    }
+                }
+            } 
+
+            const baseFreq = noteToFrequency(note);
+            for (let i = 0; i < numOscillators; i++) {
+                const osc = audioContext.createOscillator();
+                if (i === 0) {
+                    osc.type = baseOscType === 'pulse' ? 'square' : baseOscType; 
+                    osc.frequency.value = baseFreq;
+                    osc.detune.value = detuneBase;
+                } else { 
+                    osc.type = secondOscType ? (secondOscType === 'pulse' ? 'square' : secondOscType) : (baseOscType === 'pulse' ? 'square' : baseOscType);
+                    osc.frequency.value = baseFreq * (secondOscPitchRatio !== 1 && i === 1 ? secondOscPitchRatio : 1); 
+                    osc.detune.value = detuneBase + (secondOscDetune !== 0 && i === 1 ? secondOscDetune : ( (i % 2 === 0 ? -1 : 1) * detuneSpread * Math.ceil(i/2) ));
+                }
+                if (selectedSoundName === 'FM Bass Punch' && synthId === 'bass' && i === 0 && !customSoundParams.baseOscType) { 
+                    osc.frequency.setValueAtTime(baseFreq * 3, time);
+                    osc.frequency.exponentialRampToValueAtTime(baseFreq, time + 0.05);
+                }
+                oscs.push(osc);
+            }
+
+            if (noiseMix > 0) {
+                noiseOsc = audioContext.createBufferSource(); noiseOsc.buffer = whiteNoiseBuffer; noiseOsc.loop = true;
+                noiseGain = audioContext.createGain(); noiseGain.gain.value = noiseMix * peakGain; 
+            }
+
+            adsrGainNode.gain.setValueAtTime(0, time);
+            adsrGainNode.gain.linearRampToValueAtTime(peakGain, time + attackTime);
+            adsrGainNode.gain.setTargetAtTime(peakGain * sustainLevel, time + attackTime, decayTime / 3); 
+
+            if (filterEnvAmount !== 0 || filterCutoff < 19000 || filterLfoDepth > 0 || filterQ > 1) {
+                filterNode = audioContext.createBiquadFilter();
+                filterNode.type = filterType;
+                filterNode.Q.value = filterQ;
+                filterNode.frequency.setValueAtTime(filterCutoff, time);
+                if (filterEnvAmount !== 0) {
+                    filterNode.frequency.linearRampToValueAtTime(Math.min(20000, filterCutoff + filterEnvAmount), time + filterEnvAttackTime);
+                    filterNode.frequency.setTargetAtTime(Math.max(20, filterCutoff + filterEnvAmount * filterEnvSustainLevel), time + filterEnvAttackTime, filterEnvDecayTime / 3);
+                }
+                if (filterLfoRate > 0 && filterLfoDepth > 0) {
+                    lfo = audioContext.createOscillator(); lfo.type = 'sine'; lfo.frequency.value = filterLfoRate;
+                    lfoGain = audioContext.createGain(); lfoGain.gain.value = filterLfoDepth;
+                    lfo.connect(lfoGain); lfoGain.connect(filterNode.frequency); lfo.start(time);
+                }
+            }
+
+            oscs.forEach(osc => { if (filterNode) osc.connect(filterNode); else osc.connect(adsrGainNode); });
+            if (noiseOsc && noiseGain) { 
+                if (filterNode) noiseOsc.connect(noiseGain); else noiseOsc.connect(noiseGain); 
+                if (filterNode && noiseGain) noiseGain.connect(filterNode); 
+                else if(noiseGain) noiseGain.connect(adsrGainNode); 
+            }
+            if (filterNode) filterNode.connect(adsrGainNode);
+            adsrGainNode.connect(rowGainNodes[synthId]);
+
+            const totalDuration = attackTime + decayTime + releaseTime + 0.5; 
+            oscs.forEach(osc => osc.start(time));
+            if (noiseOsc) noiseOsc.start(time);
+            
+            const stopTime = time + totalDuration; 
+            adsrGainNode.gain.setTargetAtTime(0.0001, time + attackTime + decayTime, releaseTime / 3); 
+
+            setTimeout(() => { 
+                oscs.forEach(osc => { try { osc.stop(); osc.disconnect(); } catch(e){} });
+                if (noiseOsc) { try { noiseOsc.stop(); noiseOsc.disconnect(); } catch(e){} }
+                if (noiseGain) { try {noiseGain.disconnect(); } catch(e){} }
+                if (lfo) { try { lfo.stop(); lfo.disconnect(); } catch(e){} }
+                if (lfoGain) { try {lfoGain.disconnect(); } catch(e){} }
+                if (filterNode) { try { filterNode.disconnect(); } catch(e){} }
+                adsrGainNode.disconnect();
+            }, totalDuration * 1000 + 100); 
+        }
+
+        function playPadChord(chordName, time) {
+            if (chordName === '-' || !audioContext || !rowGainNodes.pad) return;
+            stopAllPadSounds(); 
+
+            const selectedPadSoundName = currentSynthSounds.pad;
+            const customPadParams = customSynthSoundDefinitions.pad && customSynthSoundDefinitions.pad[selectedPadSoundName] 
+                                    ? customSynthSoundDefinitions.pad[selectedPadSoundName] 
+                                    : {};
+            
+            const parts = chordName.match(/([A-G]#?)([0-9]+)\s(maj|min)/);
+            if (!parts) { console.error("Invalid chord name format:", chordName); return; }
+            const rootNoteName = parts[1]; const octave = parseInt(parts[2]); const type = parts[3];
+            const rootMidi = noteToMidi(`${rootNoteName}${octave}`);
+            if (rootMidi === null) return;
+            const intervals = type === 'maj' ? [0, 4, 7] : [0, 3, 7]; 
+            let chordMidiNotes = intervals.map(interval => rootMidi + interval);
+
+            let padOscType = customPadParams.padOscType || 'sawtooth';
+            let numOscillatorsPerNote = customPadParams.numOscillatorsPerNote || 1;
+            let detuneAmount = customPadParams.detuneAmount || 5;
+            let padAttackTime = customPadParams.padAttackTime || 0.3;
+            let peakPadVolume = customPadParams.peakPadVolume || 0.3;
+            let filterCutoffPad = customPadParams.filterCutoffPad || 8000;
+            let filterQPad = customPadParams.filterQPad || 1;
+            let filterEnvAmountPad = customPadParams.filterEnvAmountPad || 0;
+            let filterEnvAttackPad = customPadParams.filterEnvAttackPad || 0.1; 
+            let filterEnvDecayPad = customPadParams.filterEnvDecayPad || 0.5;
+            let lfoFilterRatePad = customPadParams.lfoFilterRatePad || 0;
+            let lfoFilterDepthPad = customPadParams.lfoFilterDepthPad || 0;
+            let noiseMixPad = customPadParams.noiseMixPad || 0;
+            let secondOscTypePad = customPadParams.secondOscTypePad || null;
+            let secondOscDetunePad = customPadParams.secondOscDetunePad || 3; 
+
+            if (!customPadParams.padOscType) { 
+                switch(selectedPadSoundName) {
+                    case 'Warm Saw Pad': padOscType = 'sawtooth'; numOscillatorsPerNote = 2; detuneAmount = 3; break;
+                    case 'Glassy Sine Pad': padOscType = 'sine'; padAttackTime = 0.6; peakPadVolume = 0.25; numOscillatorsPerNote = 3; detuneAmount = 2; break;
+                    case 'Lush Square Chorus': padOscType = 'square'; numOscillatorsPerNote = 3; detuneAmount = 8; peakPadVolume = 0.2; padAttackTime = 0.5; break;
+                    case 'Slow Filter Swell': padOscType = 'sawtooth'; padAttackTime = 1.2; peakPadVolume = 0.3; numOscillatorsPerNote = 2; detuneAmount = 4; filterCutoffPad = 150; filterEnvAmountPad = 4000; filterEnvAttackPad = 1.2; filterEnvDecayPad = 2.0; break;
+                    case 'Evolving Pad': padOscType = 'sawtooth'; numOscillatorsPerNote = 2; detuneAmount=6; padAttackTime = 0.8; peakPadVolume = 0.25; filterCutoffPad = 1000; filterQPad = 0.8; lfoFilterRatePad = 0.1; lfoFilterDepthPad = 1500; break;
+                    case 'Ghostly Choir': padOscType = 'sine'; numOscillatorsPerNote = 3; detuneAmount = 10; secondOscTypePad = 'triangle'; secondOscDetunePad = 15; padAttackTime = 1.0; peakPadVolume = 0.15; filterCutoffPad = 2000; filterQPad = 0.5; lfoFilterRatePad = 0.2; lfoFilterDepthPad = 500; break;
+                    case 'Crystal Shards': padOscType = 'triangle'; numOscillatorsPerNote = 2; detuneAmount = 2; secondOscTypePad = 'sine'; secondOscDetunePad = 5; padAttackTime = 0.7; peakPadVolume = 0.2; filterCutoffPad = 7000; filterQPad = 3; filterEnvAmountPad = -3000; filterEnvDecayPad = 1.5; noiseMixPad = 0.05; break;
+                    case 'Dark Drone': 
+                        padOscType = 'sawtooth'; numOscillatorsPerNote = 2; detuneAmount = 12; 
+                        padAttackTime = 2.0; peakPadVolume = 0.2; 
+                        filterCutoffPad = 800; filterQPad = 2; 
+                        lfoFilterRatePad = 0.05; lfoFilterDepthPad = 200; 
+                        const subOctaveRoot = rootMidi - 12; 
+                        if (!chordMidiNotes.includes(subOctaveRoot)) chordMidiNotes.push(subOctaveRoot);
+                        if (Math.random() < 0.5) { 
+                            const fifthMidi = rootMidi + 7;
+                             if (!chordMidiNotes.includes(fifthMidi)) chordMidiNotes.push(fifthMidi);
+                        }
+                        break;
+                    default: padOscType = 'sawtooth'; 
+                }
+            } 
+            
+            chordMidiNotes.forEach(midiNote => {
+                for (let i = 0; i < numOscillatorsPerNote; i++) {
+                    const osc = audioContext.createOscillator();
+                    const adsrGain = audioContext.createGain();
+                    let currentOutputNode = osc; 
+
+                    if (i === 0 || !secondOscTypePad) {
+                        osc.type = padOscType;
+                        osc.detune.value = (numOscillatorsPerNote > 1) ? ( (i % 2 === 0 ? 1 : -1) * detuneAmount * Math.ceil((i+1)/2) ) : 0;
+                    } else { 
+                        osc.type = secondOscTypePad;
+                        osc.detune.value = ( (i % 2 === 0 ? 1 : -1) * secondOscDetunePad * Math.ceil((i+1)/2) );
+                    }
+                    osc.frequency.value = midiNoteToFrequency(midiNote);
+
+                    adsrGain.gain.setValueAtTime(0, time);
+                    adsrGain.gain.linearRampToValueAtTime(peakPadVolume / numOscillatorsPerNote, time + padAttackTime);
+                    
+                    let localFilterNode = null; 
+                    let localLFO = null, localLFOGain = null;
+                    let localNoiseSource = null, localNoiseGain = null;
+
+                    if (filterEnvAmountPad !== 0 || filterCutoffPad < 19000 || lfoFilterDepthPad > 0 || filterQPad > 1) {
+                        localFilterNode = audioContext.createBiquadFilter();
+                        localFilterNode.type = 'lowpass'; 
+                        localFilterNode.Q.value = filterQPad;
+                        localFilterNode.frequency.setValueAtTime(filterCutoffPad, time);
+
+                        if(filterEnvAmountPad !== 0) {
+                            localFilterNode.frequency.linearRampToValueAtTime(Math.min(20000, filterCutoffPad + filterEnvAmountPad), time + padAttackTime + filterEnvAttackPad);
+                            localFilterNode.frequency.setTargetAtTime(Math.max(20, filterCutoffPad + filterEnvAmountPad * 0.7), time + padAttackTime + filterEnvAttackPad, filterEnvDecayPad / 2); 
+                        }
+                        if (lfoFilterRatePad > 0 && lfoFilterDepthPad > 0) {
+                            localLFO = audioContext.createOscillator(); 
+                            localLFOGain = audioContext.createGain();
+                            localLFO.type = 'sine'; localLFO.frequency.value = lfoFilterRatePad; 
+                            localLFOGain.gain.value = lfoFilterDepthPad;
+                            localLFO.connect(localLFOGain); localLFOGain.connect(localFilterNode.frequency); 
+                            localLFO.start(time);
+                            currentPadSoundSources.push({osc: localLFO, gain: localLFOGain}); 
+                        }
+                        currentOutputNode.connect(localFilterNode); 
+                        currentOutputNode = localFilterNode;       
+                    }
+                    
+                    if (noiseMixPad > 0 && i === 0) { 
+                        localNoiseSource = audioContext.createBufferSource(); 
+                        localNoiseSource.buffer = whiteNoiseBuffer; 
+                        localNoiseSource.loop = true;
+                        localNoiseGain = audioContext.createGain(); 
+                        localNoiseGain.gain.value = noiseMixPad * (peakPadVolume / numOscillatorsPerNote); 
+                        localNoiseSource.connect(localNoiseGain); 
+                        
+                        if (localFilterNode) localNoiseGain.connect(localFilterNode); 
+                        else localNoiseGain.connect(adsrGain); 
+                        
+                        localNoiseSource.start(time);
+                        currentPadSoundSources.push({ osc: localNoiseSource, gain: localNoiseGain });
+                    }
+
+                    currentOutputNode.connect(adsrGain); 
+                    adsrGain.connect(rowGainNodes.pad);
+                    osc.start(time);
+                    currentPadSoundSources.push({ osc, gain: adsrGain, midiNote: midiNote });
+                }
+            });
+        }
+
+        function stopAllPadSounds(fadeOutTime = 0.5) { if (!audioContext) return; currentPadSoundSources.forEach(source => { if (source.gain && source.gain.gain) { source.gain.gain.cancelScheduledValues(audioContext.currentTime); source.gain.gain.setValueAtTime(source.gain.gain.value, audioContext.currentTime); source.gain.gain.linearRampToValueAtTime(0.0001, audioContext.currentTime + fadeOutTime); } if (source.osc) { source.osc.stop(audioContext.currentTime + fadeOutTime + 0.05); try {source.osc.disconnect(); } catch(e){}} if(source.gain) {try{source.gain.disconnect();} catch(e){}} }); currentPadSoundSources = []; }
+        function noteToFrequency(noteName) { return 440 * Math.pow(2, ({ 'C':0, 'C#':1, 'D':2, 'D#':3, 'E':4, 'F':5, 'F#':6, 'G':7, 'G#':8, 'A':9, 'A#':10, 'B':11 }[noteName.slice(0,-1)] + (parseInt(noteName.slice(-1)) - 4) * 12) / 12); }
+        function midiNoteToFrequency(midiNote) { return 440 * Math.pow(2, (midiNote - 69) / 12); }
+        function scheduleNextNotes() { instrumentDefs.forEach(instr => { if (instr.isSynth) { if (instr.synthType === 'pad') { const padChord = synthSequences.pad[currentStep]; if (padChord !== '-') { playPadChord(padChord, nextNoteTime); } } else { const synthNote = synthSequences[instr.synthType][currentStep]; if (synthNote !== '-') playSynthNote(instr.id, synthNote, nextNoteTime); } } else if (sequence[instr.id] && sequence[instr.id][currentStep]) { playSound(instr.id, nextNoteTime); } }); }
+        function mainScheduler() { if (!isPlaying && !isSongModePlaying) { clearTimeout(schedulerIntervalId); schedulerIntervalId = null; return; } let currentPlaybackNUM_STEPS = NUM_STEPS; if (isSongModePlaying) { const currentRiffIdForPlayback = songPlaybackStructure[currentSongPartIndex]; const riffData = songRiffs[currentRiffIdForPlayback]; if (riffData) currentPlaybackNUM_STEPS = riffData.numSteps; else { stopSongPlayback(); alert(`Error: Riff ${currentRiffIdForPlayback} data not found for song playback.`); return; } } while (nextNoteTime < audioContext.currentTime + scheduleAheadTime) { scheduleNextNotes(); nextNoteTime += (60.0 / bpm) / 4; currentStep = (currentStep + 1); if (currentStep >= currentPlaybackNUM_STEPS) { currentStep = 0; if (isSongModePlaying) { currentSongPartIndex = (currentSongPartIndex + 1); if (currentSongPartIndex >= songPlaybackStructure.length) { currentSongPartIndex = 0; } loadRiffDataForPlayback(songPlaybackStructure[currentSongPartIndex]); const newRiffData = songRiffs[songPlaybackStructure[currentSongPartIndex]]; currentPlaybackNUM_STEPS = newRiffData ? newRiffData.numSteps : NUM_STEPS; if (visualUpdateIntervalId) { clearInterval(visualUpdateIntervalId); visualStep = 0; startVisualUpdates(); } } } } if (isPlaying || isSongModePlaying) { schedulerIntervalId = setTimeout(mainScheduler, lookahead); } }
+        let visualUpdateIntervalId = null; let visualStep = 0; 
+        function startVisualUpdates() { const stepInterval = (60.0 / bpm / 4) * 1000; if (visualUpdateIntervalId) clearInterval(visualUpdateIntervalId); let currentVisualNUM_STEPS = NUM_STEPS; if(isSongModePlaying && songRiffs[songPlaybackStructure[currentSongPartIndex]]) { currentVisualNUM_STEPS = songRiffs[songPlaybackStructure[currentSongPartIndex]].numSteps; } if ((isPlaying || isSongModePlaying) && audioContext.currentTime > nextNoteTime - (stepInterval/1000) ){ visualStep = currentStep; } else { visualStep = (currentStep -1 + currentVisualNUM_STEPS) % currentVisualNUM_STEPS; } visualUpdateIntervalId = setInterval(() => { if (!isPlaying && !isSongModePlaying) { clearInterval(visualUpdateIntervalId); visualUpdateIntervalId = null; document.querySelectorAll('.step.current').forEach(s => s.classList.remove('current')); return; } let currentIntervalNUM_STEPS = NUM_STEPS; if(isSongModePlaying && songRiffs[songPlaybackStructure[currentSongPartIndex]]) { currentIntervalNUM_STEPS = songRiffs[songPlaybackStructure[currentSongPartIndex]].numSteps; } document.querySelectorAll('.step.current').forEach(s => s.classList.remove('current')); instrumentDefs.forEach(instr => { const stepsContainer = document.getElementById(`${instr.id}Steps`); if (stepsContainer && stepsContainer.children.length === currentIntervalNUM_STEPS) { const steps = stepsContainer.children; if (steps[visualStep]) steps[visualStep].classList.add('current'); } }); visualStep = (visualStep + 1) % currentIntervalNUM_STEPS; }, stepInterval); }
+        function playStop() { initAudioContext(); if (isSongModePlaying) { stopSongPlayback(); } isPlaying = !isPlaying; if (isPlaying) { playStopBtn.textContent = 'Stop'; if (audioContext.state === 'suspended') audioContext.resume(); if (currentStep === 0 && nextNoteTime < audioContext.currentTime || currentStep >= NUM_STEPS) { currentStep = 0; visualStep = 0; nextNoteTime = audioContext.currentTime + 0.05; } else if (nextNoteTime < audioContext.currentTime) { nextNoteTime = audioContext.currentTime + 0.05; } mainScheduler(); startVisualUpdates(); } else { playStopBtn.textContent = 'Play'; clearTimeout(schedulerIntervalId); schedulerIntervalId = null; clearInterval(visualUpdateIntervalId); visualUpdateIntervalId = null; document.querySelectorAll('.step.current').forEach(s => s.classList.remove('current')); stopAllPadSounds(); } }
+        function updateTempo(newBpm) { if (bpm === newBpm && audioContext) return; bpm = newBpm; tempoRangeSlider.value = bpm; tempoInput.value = bpm; if ((isPlaying || isSongModePlaying) && audioContext) { clearTimeout(schedulerIntervalId); clearInterval(visualUpdateIntervalId); nextNoteTime = audioContext.currentTime + 0.05; mainScheduler(); startVisualUpdates(); } }
+        tempoRangeSlider.addEventListener('input', (e) => updateTempo(parseInt(e.target.value)));
+        tempoInput.addEventListener('input', (e) => { let val = parseInt(e.target.value); if (!isNaN(val)) { bpm = Math.max(40, Math.min(240, val)); tempoRangeSlider.value = bpm; if((isPlaying || isSongModePlaying) && audioContext) updateTempo(bpm);}});
+        tempoInput.addEventListener('change', (e) => { let val = parseInt(e.target.value); val = isNaN(val) || val < 40 || val > 240 ? bpm : Math.max(40, Math.min(240, val)); e.target.value = val; updateTempo(val); });
+        let tapTimes = []; tapTempoBtn.addEventListener('click', () => { initAudioContext(); const now = audioContext.currentTime*1000; tapTimes.push(now); if(tapTimes.length>4)tapTimes.shift(); if(tapTimes.length>1){let avg=0; for(let i=0;i<tapTimes.length-1;i++)avg+=tapTimes[i+1]-tapTimes[i]; avg/=(tapTimes.length-1); if(avg>0)updateTempo(Math.max(40,Math.min(240,Math.round(60000/avg))));} tapTempoBtn.style.backgroundColor = 'var(--accent-color)'; setTimeout(() => { tapTempoBtn.style.backgroundColor = ''; }, 100); });
+        function handleLengthChangeFromUI(newLength) { if (NUM_STEPS === newLength && document.getElementById(`${instrumentDefs[0].id}Steps`)?.children.length === newLength) return; const wasPlaying = isPlaying; const wasSongPlaying = isSongModePlaying; if (wasPlaying) playStop(); if (wasSongPlaying) stopSongPlayback(); NUM_STEPS = newLength; createSequencerGrid(); currentStep = Math.min(currentStep, NUM_STEPS - 1); if (currentStep < 0) currentStep = 0; visualStep = currentStep; if(audioContext) nextNoteTime = audioContext.currentTime + 0.05; else nextNoteTime = 0.05; }
+        seqLengthSelect.addEventListener('change', (e) => handleLengthChangeFromUI(parseInt(e.target.value)));
+        masterVolumeSlider.addEventListener('input', (e) => handleMasterVolumeChange(parseFloat(e.target.value)));
+        masterVolumeInput.addEventListener('input', (e) => { let val = parseFloat(e.target.value); if (!isNaN(val)) handleMasterVolumeChange(Math.max(0, Math.min(1, val))); });
+        masterVolumeInput.addEventListener('change', (e) => { let val = parseFloat(e.target.value); val = isNaN(val) || val < 0 || val > 1 ? (masterGainNode ? masterGainNode.gain.value : 0.8) : Math.max(0, Math.min(1, val)); e.target.value = val.toFixed(2); handleMasterVolumeChange(val); });
+        function clearSingleRow(instrument) { const wasPlaying = isPlaying || isSongModePlaying; if (wasPlaying && instrument.synthType === 'pad' && audioContext) { stopAllPadSounds(0.05); } const stepsContainer = document.getElementById(`${instrument.id}Steps`); if (instrument.isSynth) { if (synthSequences[instrument.synthType]) synthSequences[instrument.synthType].fill('-'); if (stepsContainer) Array.from(stepsContainer.children).forEach(step => { step.classList.remove('active'); if (step.querySelector('select')) step.querySelector('select').value = '-'; }); } else { if (sequence[instrument.id]) sequence[instrument.id].fill(false); if (stepsContainer) Array.from(stepsContainer.children).forEach(step => step.classList.remove('active')); } }
+        function clearAllSequencerData(confirmNeeded = true) { let doClear = true; if (confirmNeeded) { doClear = confirm("Are you sure you want to clear the ENTIRE current riff?"); } if (doClear) { instrumentDefs.forEach(instr => clearSingleRow(instr)); if (isPlaying) { playStop(); } if (isSongModePlaying) { stopSongPlayback(); } currentStep = 0; visualStep = 0; if (audioContext) { nextNoteTime = audioContext.currentTime + 0.05; stopAllPadSounds(0.1); } else { nextNoteTime = 0.05; } document.querySelectorAll('.step.current').forEach(s => s.classList.remove('current')); } return doClear; }
+        clearPatternBtn.addEventListener('click', () => clearAllSequencerData(true));
+        function getPatternData() { return { version: "1.4", riffId: currentEditingRiffId, bpm: bpm, numSteps: NUM_STEPS, masterVolume: masterGainNode ? masterGainNode.gain.value : 0.8, globalRootNote: currentGlobalRootNote, globalScale: currentGlobalScale, rowVolumes: { ...rowVolumes }, currentSynthSounds: { ...currentSynthSounds }, drumSequence: JSON.parse(JSON.stringify(sequence)), synthSequences: JSON.parse(JSON.stringify(synthSequences)), loadedSamples: { ...currentLoadedSamples } }; }
+        function saveRiffPatternToFile() { const dataToSave = getPatternData(); const jsonData = JSON.stringify(dataToSave, null, 2); const blob = new Blob([jsonData], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `synthwave_riff_${currentEditingRiffId}_${new Date().toISOString().slice(0,10)}.swsseq`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); }
+        function loadRiffPatternFromFile(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { try { const loadedData = JSON.parse(e.target.result); applyLoadedPattern(loadedData, false, true); if (loadedData.riffId && ['A', 'B', 'C'].includes(loadedData.riffId)) { currentEditingRiffId = loadedData.riffId; updateRiffDisplay(); } alert("Riff pattern loaded!"); } catch (err) { console.error("Error parsing pattern file:", err); alert("Could not load pattern: Invalid file format."); } }; reader.readAsText(file); loadRiffFileInput.value = ''; }
+        
+        function applyLoadedPattern(data, isInternalRiffLoad = false, isExternalFileLoad = false) { 
+            if (isPlaying) playStop(); 
+            if (isSongModePlaying) stopSongPlayback(); 
+            if (isExternalFileLoad && data.bpm) updateTempo(data.bpm); 
+            
+            // Before changing NUM_STEPS, if it will change, store it.
+            const oldNumSteps = NUM_STEPS;
+            if (data.numSteps) {
+                 NUM_STEPS = data.numSteps; // Update global NUM_STEPS first
+            }
+
+            if (oldNumSteps !== NUM_STEPS || (document.getElementById(`${instrumentDefs[0].id}Steps`) && document.getElementById(`${instrumentDefs[0].id}Steps`).children.length !== NUM_STEPS)) {
+                seqLengthSelect.value = NUM_STEPS; // Update UI selector
+                // createSequencerGrid will be called because NUM_STEPS changed or grid is inconsistent
+            }
+            
+            handleMasterVolumeChange(data.masterVolume !== undefined ? data.masterVolume : 0.8); 
+            currentGlobalRootNote = data.globalRootNote || 'C'; 
+            globalRootNoteSelect.value = currentGlobalRootNote; 
+            currentGlobalScale = data.globalScale || 'minor'; 
+            globalScaleSelect.value = currentGlobalScale; 
+            
+            if (data.rowVolumes) { 
+                instrumentDefs.forEach(instr => { 
+                    if (data.rowVolumes[instr.id] !== undefined) { 
+                        handleRowVolumeChange(instr.id, data.rowVolumes[instr.id]); 
+                    } else { 
+                        handleRowVolumeChange(instr.id, instr.defaultVol); 
+                    } 
+                }); 
+            } else { 
+                instrumentDefs.forEach(instr => handleRowVolumeChange(instr.id, instr.defaultVol)); 
+            } 
+            
+            if (data.currentSynthSounds) { 
+                currentSynthSounds = { ...data.currentSynthSounds }; 
+            } else { 
+                currentSynthSounds = { bass: 'Reso Growl', pluck: 'Short Square Blip', lead: 'Detuned PWM Lead', pad: 'Evolving Pad' }; 
+            } 
+            updateAllSynthSoundSelectors(); 
+            
+            if (data.loadedSamples) {
+                currentLoadedSamples = { ...data.loadedSamples };
+                instrumentDefs.forEach(instr => {
+                    if (!instr.isSynth) {
+                        const expectedFileName = currentLoadedSamples[instr.id];
+                        if (expectedFileName && globallyLoadedSampleBuffers[expectedFileName]) {
+                            samples[instr.id] = globallyLoadedSampleBuffers[expectedFileName];
+                        } else {
+                            samples[instr.id] = null; 
+                        }
+                    }
+                });
+            } else {
+                instrumentDefs.forEach(instr => {
+                    if (!instr.isSynth) {
+                        currentLoadedSamples[instr.id] = null;
+                        samples[instr.id] = null;
+                    }
+                });
+            }
+            populateDrumSampleSelectors(); 
+
+            if (data.drumSequence) { 
+                sequence = {}; 
+                instrumentDefs.forEach(instr => { 
+                    if (!instr.isSynth) { 
+                        sequence[instr.id] = Array(NUM_STEPS).fill(false); 
+                        if (data.drumSequence[instr.id]) { 
+                            for(let i=0; i < Math.min(data.drumSequence[instr.id].length, NUM_STEPS); i++) { 
+                                sequence[instr.id][i] = data.drumSequence[instr.id][i]; 
+                            } 
+                        } 
+                    } 
+                }); 
+            } else { 
+                sequence = {}; 
+                instrumentDefs.forEach(instr => { 
+                    if (!instr.isSynth) sequence[instr.id] = Array(NUM_STEPS).fill(false); 
+                }); 
+            } 
+            
+            if (data.synthSequences) { 
+                synthSequences = { bass: [], pluck: [], lead: [], pad: [] }; 
+                instrumentDefs.forEach(instr => { 
+                    if (instr.isSynth) { 
+                        synthSequences[instr.synthType] = Array(NUM_STEPS).fill('-'); 
+                        if (data.synthSequences[instr.synthType]) { 
+                            for(let i=0; i < Math.min(data.synthSequences[instr.synthType].length, NUM_STEPS); i++) { 
+                                synthSequences[instr.synthType][i] = data.synthSequences[instr.synthType][i]; 
+                            } 
+                        } 
+                    } 
+                }); 
+            } else { 
+                synthSequences = { 
+                    bass: Array(NUM_STEPS).fill('-'), pluck: Array(NUM_STEPS).fill('-'), 
+                    lead: Array(NUM_STEPS).fill('-'), pad: Array(NUM_STEPS).fill('-') 
+                }; 
+            } 
+            
+            // Ensure grid is recreated if NUM_STEPS changed or if it's inconsistent
+            if (oldNumSteps !== NUM_STEPS || (document.getElementById(`${instrumentDefs[0].id}Steps`) && document.getElementById(`${instrumentDefs[0].id}Steps`).children.length !== NUM_STEPS) ) {
+                createSequencerGrid();
+            }
+            updateAllStepVisuals(); 
+            if (!isInternalRiffLoad && !isExternalFileLoad) { 
+                alert("Pattern applied!"); 
+            } 
+        }
+
+        function updateAllStepVisuals() { instrumentDefs.forEach(instr => { const stepsContainer = document.getElementById(`${instr.id}Steps`); if (!stepsContainer || stepsContainer.children.length !== NUM_STEPS) return; const steps = Array.from(stepsContainer.children); if (instr.isSynth) { const currentSeqArray = synthSequences[instr.synthType]; if (currentSeqArray && currentSeqArray.length === NUM_STEPS) { steps.forEach((stepDiv, i) => { const isActive = currentSeqArray[i] !== '-'; stepDiv.classList.toggle('active', isActive); const select = stepDiv.querySelector('select'); if (select) select.value = currentSeqArray[i]; }); } } else { const currentSeqArray = sequence[instr.id]; if (currentSeqArray && currentSeqArray.length === NUM_STEPS) { steps.forEach((stepDiv, i) => { stepDiv.classList.toggle('active', currentSeqArray[i]); }); } } }); }
+        function getNotesInScale(rootNote, scaleName, octaves = [2, 3, 4], returnPitchClassOnly = false) { const rootIndex = allNotes.indexOf(rootNote); if (rootIndex === -1 || !scales[scaleName]) return []; const scaleIntervals = scales[scaleName]; let notes = []; let pitchClasses = new Set(); scaleIntervals.forEach(interval => { const noteIndex = (rootIndex + interval) % 12; pitchClasses.add(allNotes[noteIndex]); }); if (returnPitchClassOnly) { return Array.from(pitchClasses); } octaves.forEach(octave => { scaleIntervals.forEach(interval => { const noteIndex = (rootIndex + interval) % 12; notes.push(`${allNotes[noteIndex]}${octave}`); }); }); return notes; }
+        function getChordNotes(chordName, returnPitchClassOnly = false) { if (!chordName || chordName === '-') return []; const parts = chordName.match(/([A-G]#?)([0-9]+)\s(maj|min)/); if (!parts) return []; const rootNoteName = parts[1]; const octave = parseInt(parts[2]); const type = parts[3]; const rootMidi = noteToMidi(`${rootNoteName}${octave}`); if (rootMidi === null) return []; const intervals = type === 'maj' ? [0, 4, 7] : [0, 3, 7];  let chordPitchClasses = new Set(); let chordNotesWithOctave = []; intervals.forEach(interval => { const midi = rootMidi + interval; const noteOctave = Math.floor(midi / 12) - 1; const noteName = allNotes[midi % 12]; chordPitchClasses.add(noteName); chordNotesWithOctave.push(`${noteName}${noteOctave}`); }); return returnPitchClassOnly ? Array.from(chordPitchClasses) : chordNotesWithOctave; }
+        function randomizeRow(instrument) { const stepsContainer = document.getElementById(`${instrument.id}Steps`); if (!stepsContainer) return; const stepElements = Array.from(stepsContainer.children); const density = 0.3 + Math.random() * 0.4;  if (instrument.isSynth) { const defaultOctave = instrument.synthType === 'bass' ? 2 : (instrument.synthType === 'pad' ? 2 : 3); let relevantOctaves = [defaultOctave, defaultOctave + 1]; if (instrument.synthType === 'bass') relevantOctaves = [defaultOctave -1, defaultOctave, defaultOctave +1].filter(o => o >=0); if (instrument.synthType === 'pad') relevantOctaves = padChordOctaves.map(o => parseInt(o)); const globalScaleNotesWithOctave = getNotesInScale(currentGlobalRootNote, currentGlobalScale, relevantOctaves); const globalScalePitchClasses = getNotesInScale(currentGlobalRootNote, currentGlobalScale, [], true);  for (let i = 0; i < NUM_STEPS; i++) { if (Math.random() < density) { if (instrument.synthType === 'pad') { const diatonicRootsPitchClasses = getNotesInScale(currentGlobalRootNote, currentGlobalScale, [], true); if (diatonicRootsPitchClasses.length > 0) { const randomRootPC = diatonicRootsPitchClasses[Math.floor(Math.random() * diatonicRootsPitchClasses.length)]; const randomOctave = relevantOctaves[Math.floor(Math.random() * relevantOctaves.length)]; const randomRootWithOctave = `${randomRootPC}${randomOctave}`; const randomType = Math.random() < 0.6 ? 'maj' : 'min';  const candidateChord = `${randomRootWithOctave} ${randomType}`; if (padChordRange.includes(candidateChord)) { synthSequences.pad[i] = candidateChord; } else { let foundFallback = false; for (const oct of padChordOctaves) { const fallbackChord = `${randomRootPC}${oct} ${randomType}`; if (padChordRange.includes(fallbackChord)) { synthSequences.pad[i] = fallbackChord; foundFallback = true; break; } } if (!foundFallback) { const availableChords = padChordRange.filter(c => c !== '-'); if (availableChords.length > 0) { synthSequences.pad[i] = availableChords[Math.floor(Math.random() * availableChords.length)]; } else { synthSequences.pad[i] = '-'; } } } } else { synthSequences.pad[i] = '-'; } } else {  let notesToChooseFrom = []; const padChordAtStep = synthSequences.pad[i]; if (padChordAtStep && padChordAtStep !== '-') { const padChordNotesWithOctave = getChordNotes(padChordAtStep, false); notesToChooseFrom = padChordNotesWithOctave.filter(padNote => { const pitchClass = padNote.replace(/[0-9]/g, '');  return globalScalePitchClasses.includes(pitchClass); }); } if (notesToChooseFrom.length === 0) { notesToChooseFrom = [...globalScaleNotesWithOctave]; } if (notesToChooseFrom.length > 0) { let instrumentSpecificRange; if (instrument.synthType === 'bass') instrumentSpecificRange = bassNoteRange.filter(n => n !== '-'); else if (instrument.synthType === 'pluck') instrumentSpecificRange = pluckNoteRange.filter(n => n !== '-'); else if (instrument.synthType === 'lead') instrumentSpecificRange = leadNoteRange.filter(n => n !== '-'); if (instrumentSpecificRange && instrumentSpecificRange.length > 0) { const finalChoices = notesToChooseFrom.filter(n => instrumentSpecificRange.includes(n)); if (finalChoices.length > 0) { synthSequences[instrument.synthType][i] = finalChoices[Math.floor(Math.random() * finalChoices.length)]; } else { if (notesToChooseFrom.length > 0) synthSequences[instrument.synthType][i] = notesToChooseFrom[Math.floor(Math.random() * notesToChooseFrom.length)]; else synthSequences[instrument.synthType][i] = '-'; } } else { synthSequences[instrument.synthType][i] = notesToChooseFrom[Math.floor(Math.random() * notesToChooseFrom.length)]; } } else { synthSequences[instrument.synthType][i] = '-'; } } } else { synthSequences[instrument.synthType][i] = '-'; } const select = stepElements[i].querySelector('select'); if (select) select.value = synthSequences[instrument.synthType][i]; stepElements[i].classList.toggle('active', synthSequences[instrument.synthType][i] !== '-'); } } else { for (let i = 0; i < NUM_STEPS; i++) { const isActive = Math.random() < density; sequence[instrument.id][i] = isActive; stepElements[i].classList.toggle('active', isActive); } } }
+        function getDiatonicChords(rootNote, scaleName, octave = 3) { const scaleIntervals = scales[scaleName]; const rootNoteIndex = allNotes.indexOf(rootNote); if (rootNoteIndex === -1 || !scaleIntervals) return []; const chords = []; const majorModeQualities = ['maj', 'min', 'min', 'maj', 'maj', 'min', 'dim']; const minorModeQualities = ['min', 'dim', 'maj', 'min', 'min', 'maj', 'maj']; const harmonicMinorQualities = ['min', 'dim', 'maj', 'min', 'maj', 'maj', 'dim']; const melodicMinorQualities = ['min', 'min', 'maj', 'maj', 'maj', 'dim', 'dim']; let qualitiesToUse = []; if (['major', 'lydian', 'mixolydian', 'lydianDominant'].includes(scaleName)) qualitiesToUse = majorModeQualities; else if (['minor', 'dorian', 'phrygian'].includes(scaleName)) qualitiesToUse = minorModeQualities; else if (scaleName === 'harmonicMinor') qualitiesToUse = harmonicMinorQualities; else if (scaleName === 'melodicMinor') qualitiesToUse = melodicMinorQualities; else if (scaleName === 'phrygianDominant') qualitiesToUse = harmonicMinorQualities; if (qualitiesToUse.length === 0) { const scalePCs = getNotesInScale(rootNote, scaleName, [], true); scalePCs.forEach(pc => { ['maj', 'min'].forEach(type => { const potentialChord = `${pc}${octave} ${type}`; if (padChordRange.includes(potentialChord)) chords.push(potentialChord); else { for (const oct of padChordOctaves) { const fallback = `${pc}${oct} ${type}`; if (padChordRange.includes(fallback)) { chords.push(fallback); break;} } } }); }); return [...new Set(chords)].slice(0, 4); } for (let i = 0; i < Math.min(scaleIntervals.length, qualitiesToUse.length); i++) { const degreeRootIndex = (rootNoteIndex + scaleIntervals[i]) % 12; const degreeRootName = allNotes[degreeRootIndex]; let chordType = qualitiesToUse[i]; if (chordType === 'dim') chordType = 'min'; const potentialChord = `${degreeRootName}${octave} ${chordType}`; if (padChordRange.includes(potentialChord)) { chords.push(potentialChord); } else { for (const oct of padChordOctaves) { const fallbackChord = `${degreeRootName}${oct} ${chordType}`; if (padChordRange.includes(fallbackChord)) { chords.push(fallbackChord); break; } } } } return [...new Set(chords)]; }
+        function generatePadProgressionInternal() { const stepsPerChord = Math.max(4, Math.floor(NUM_STEPS / (NUM_STEPS <= 8 ? 2 : 4) )); const numChordsInProgression = Math.ceil(NUM_STEPS / stepsPerChord); const baseOctaveForPads = padChordOctaves.includes('3') ? 3 : parseInt(padChordOctaves[Math.floor(padChordOctaves.length / 2)]); let availableDiatonicChords = getDiatonicChords(currentGlobalRootNote, currentGlobalScale, baseOctaveForPads); if (availableDiatonicChords.length === 0) { const scalePCs = getNotesInScale(currentGlobalRootNote, currentGlobalScale, [], true); scalePCs.forEach(pc => { ['maj', 'min'].forEach(type => { padChordOctaves.forEach(oct => { const chord = `${pc}${oct} ${type}`; if (padChordRange.includes(chord) && !availableDiatonicChords.includes(chord)) availableDiatonicChords.push(chord); }); }); }); if (availableDiatonicChords.length === 0) { synthSequences.pad.fill('-'); console.warn("No diatonic chords found for pad generation with current settings."); return; } } let progression = []; let lastChord = null; if (availableDiatonicChords.length > 0 && Math.random() < 0.7) { const tonicChord = availableDiatonicChords.find(c => c.startsWith(currentGlobalRootNote)); if (tonicChord) progression.push(tonicChord); } for (let i = progression.length; i < numChordsInProgression; i++) { let nextChord; if (availableDiatonicChords.length === 1) { nextChord = availableDiatonicChords[0]; } else { do { nextChord = availableDiatonicChords[Math.floor(Math.random() * availableDiatonicChords.length)]; } while (nextChord === lastChord && availableDiatonicChords.length > 1); } progression.push(nextChord); lastChord = nextChord; } if (progression.length === 0 && availableDiatonicChords.length > 0) { progression.push(availableDiatonicChords[0]); } for (let i = 0; i < NUM_STEPS; i++) { const chordIndex = Math.floor(i / stepsPerChord); synthSequences.pad[i] = progression.length > 0 ? progression[chordIndex % progression.length] : '-'; } }
+        function generateBassLineInternal() { const scaleNotesBassOctaves = getNotesInScale(currentGlobalRootNote, currentGlobalScale, [1, 2]); if (scaleNotesBassOctaves.length === 0 && !bassNoteRange.some(n => n.startsWith(currentGlobalRootNote))) { synthSequences.bass.fill('-'); return; } for (let i = 0; i < NUM_STEPS; i++) { synthSequences.bass[i] = '-'; const currentPadChord = synthSequences.pad[i]; if (i % 4 === 0) { let targetNote = null; if (currentPadChord && currentPadChord !== '-') { const chordParts = currentPadChord.match(/([A-G]#?)([0-9]+)\s(maj|min)/); if (chordParts) { const rootPitchClass = chordParts[1]; const preferredBassOctaves = [1, 2]; for (const oct of preferredBassOctaves) { const potentialNote = `${rootPitchClass}${oct}`; if (bassNoteRange.includes(potentialNote)) { targetNote = potentialNote; break; } } if (!targetNote) { const padOctave = parseInt(chordParts[2]); const potentialNotePadOct = `${rootPitchClass}${padOctave}`; if (bassNoteRange.includes(potentialNotePadOct)) targetNote = potentialNotePadOct; else if (padOctave < 3) { const potentialNotePadOctPlus1 = `${rootPitchClass}${padOctave + 1}`; if (bassNoteRange.includes(potentialNotePadOctPlus1)) targetNote = potentialNotePadOctPlus1; } } } } if (!targetNote) { let fallbackBassNotes = scaleNotesBassOctaves.filter(sn => bassNoteRange.includes(sn)); if (fallbackBassNotes.length === 0) { if (bassNoteRange.includes(`${currentGlobalRootNote}1`)) fallbackBassNotes.push(`${currentGlobalRootNote}1`); if (bassNoteRange.includes(`${currentGlobalRootNote}2`)) fallbackBassNotes.push(`${currentGlobalRootNote}2`); } if (fallbackBassNotes.length > 0) { targetNote = fallbackBassNotes[Math.floor(Math.random() * fallbackBassNotes.length)]; } } if (targetNote) synthSequences.bass[i] = targetNote; } } }
+        function generateMelodyInternal(synthType) { const octaves = synthType === 'pluck' ? [3, 4] : [4, 5]; const noteRange = synthType === 'pluck' ? pluckNoteRange : leadNoteRange; const scaleNotesForMelody = getNotesInScale(currentGlobalRootNote, currentGlobalScale, octaves); if (scaleNotesForMelody.length === 0 && !noteRange.some(n => n.startsWith(currentGlobalRootNote))) { synthSequences[synthType].fill('-'); return; } const density = synthType === 'pluck' ? 0.45 : 0.35; for (let i = 0; i < NUM_STEPS; i++) { synthSequences[synthType][i] = '-'; if (Math.random() < density) { let targetNote = null; const currentPadChord = synthSequences.pad[i]; let notesToChooseFrom = []; if (currentPadChord && currentPadChord !== '-') { const chordTonesWithOctave = getChordNotes(currentPadChord, false); notesToChooseFrom = chordTonesWithOctave.filter(ct => noteRange.includes(ct) && scaleNotesForMelody.includes(ct)); } if (notesToChooseFrom.length === 0) { notesToChooseFrom = scaleNotesForMelody.filter(sn => noteRange.includes(sn)); if (notesToChooseFrom.length === 0) { for(const oct of octaves) { if (noteRange.includes(`${currentGlobalRootNote}${oct}`)) notesToChooseFrom.push(`${currentGlobalRootNote}${oct}`); } } } if (notesToChooseFrom.length > 0) { targetNote = notesToChooseFrom[Math.floor(Math.random() * notesToChooseFrom.length)]; synthSequences[synthType][i] = targetNote; } } } }
+        function generateDrumPatternInternal(drumType) { if (!sequence[drumType] || sequence[drumType].length !== NUM_STEPS) sequence[drumType] = Array(NUM_STEPS).fill(false); else sequence[drumType].fill(false); const stepsPerBeat = 4; for (let i = 0; i < NUM_STEPS; i++) { let activate = false; const currentBeat = Math.floor(i / stepsPerBeat); const stepInBeat = i % stepsPerBeat; switch (drumType) { case 'kick': if (stepInBeat === 0) { if (NUM_STEPS <= 8) activate = Math.random() < 0.8; else if (currentBeat % 2 === 0) activate = Math.random() < 0.8; else activate = Math.random() < 0.2; } else if (stepInBeat === 2 && Math.random() < 0.15) activate = true; break; case 'snare': if (stepInBeat === 0 && currentBeat % 2 === 1) { activate = Math.random() < 0.9; } break; case 'hihat': if (i % 2 === 0 && Math.random() < 0.75) activate = true; else if (Math.random() < 0.25) activate = true; if (sequence['kick'][i] || sequence['snare'][i]) { if(Math.random() < 0.5) activate = false; } break; case 'cymbal': if (i === 0 && Math.random() < 0.6) activate = true; else if ( (i === (NUM_STEPS / 2) || i === (NUM_STEPS / 2) -1 ) && Math.random() < 0.2) activate = true; else if ( (i === NUM_STEPS - stepsPerBeat || i === NUM_STEPS -1) && Math.random() < 0.2) activate = true; break; case 'tom1': case 'tom2': if (i > NUM_STEPS / 2 && stepInBeat !== 0 && Math.random() < (0.15 / (NUM_STEPS/16)) ) { if (drumType === 'tom1' && !sequence['tom2'][i]) activate = true; if (drumType === 'tom2' && !sequence['tom1'][i] && i % 2 !== 0) activate = true; } break; } sequence[drumType][i] = activate; } }
+        function refinePadProgression() { for (let i = 1; i < NUM_STEPS; i++) { if (synthSequences.pad[i] !== '-' && synthSequences.pad[i] === synthSequences.pad[i - 1]) { synthSequences.pad[i] = '-'; } } for (let i = 2; i < NUM_STEPS; i++) { if (synthSequences.pad[i] !== '-' && synthSequences.pad[i-2] !== '-' && synthSequences.pad[i] === synthSequences.pad[i - 2]) { synthSequences.pad[i] = '-'; } } }
+        function generateCurrentRiffContent() { if (!confirm("This will clear the current riff and generate new content using the selected Key and Scale. Are you sure?")) { return; } if (isPlaying) playStop(); if (isSongModePlaying) stopSongPlayback(); instrumentDefs.forEach(instr => clearSingleRow(instr)); currentStep = 0; visualStep = 0; if (audioContext) nextNoteTime = audioContext.currentTime + 0.05; document.querySelectorAll('.step.current').forEach(s => s.classList.remove('current')); generatePadProgressionInternal(); generateBassLineInternal(); generateMelodyInternal('pluck'); if (Math.random() > 0.4) { generateMelodyInternal('lead'); } generateDrumPatternInternal('kick'); generateDrumPatternInternal('snare'); generateDrumPatternInternal('hihat'); if (Math.random() > 0.5) generateDrumPatternInternal('cymbal'); if (Math.random() > 0.7) generateDrumPatternInternal('tom1'); if (Math.random() > 0.8 && NUM_STEPS > 8) generateDrumPatternInternal('tom2'); refinePadProgression(); updateAllStepVisuals(); }
+        function randomizeGlobalKeyScale() { const availableRootNotes = [...allNotes]; currentGlobalRootNote = availableRootNotes[Math.floor(Math.random() * availableRootNotes.length)]; globalRootNoteSelect.value = currentGlobalRootNote; const scaleKeys = Object.keys(scales); currentGlobalScale = scaleKeys[Math.floor(Math.random() * scaleKeys.length)]; globalScaleSelect.value = currentGlobalScale; }
+        const midiNoteMap = { kick: 36, snare: 38, hihat: 42, cymbal: 49, tom1: 45, tom2: 47 }; const PPQN = 480; function exportMIDI() { if (!audioContext) alert("Please interact with the sequencer (e.g., play) before exporting MIDI."); const ticksPerStep = PPQN / 4; let midiEvents = []; const microsecsPerQuarterNote = Math.round(60000000 / bpm); midiEvents.push([0, 0xFF, 0x51, 0x03, (microsecsPerQuarterNote >> 16) & 0xFF, (microsecsPerQuarterNote >> 8) & 0xFF, microsecsPerQuarterNote & 0xFF ]); instrumentDefs.forEach(instr => { if (instr.isSynth) { const currentSeqArray = synthSequences[instr.synthType]; let midiChannel = 0x90; if (instr.synthType === 'pluck') midiChannel = 0x91; else if (instr.synthType === 'lead') midiChannel = 0x92; else if (instr.synthType === 'pad') midiChannel = 0x93; if (instr.synthType === 'pad') { let activePadNotes = null; let lastChordPlayedAtTick = -1; for (let stepIndex = 0; stepIndex < NUM_STEPS; stepIndex++) { const chordName = currentSeqArray[stepIndex]; const startTimeTicks = stepIndex * ticksPerStep; if (chordName !== '-') { if (activePadNotes && startTimeTicks > lastChordPlayedAtTick) { activePadNotes.forEach(note => midiEvents.push([startTimeTicks -1, midiChannel - 0x10, note, 0])); } const parts = chordName.match(/([A-G]#?)([0-9]+)\s(maj|min)/); if (parts) { const rootMidi = noteToMidi(`${parts[1]}${parts[2]}`); const type = parts[3]; const intervals = type === 'maj' ? [0, 4, 7] : [0, 3, 7]; activePadNotes = intervals.map(interval => rootMidi + interval); activePadNotes.forEach(note => midiEvents.push([startTimeTicks, midiChannel, note, 70])); lastChordPlayedAtTick = startTimeTicks; } else { activePadNotes = null; } } else if (activePadNotes && startTimeTicks > lastChordPlayedAtTick) { activePadNotes.forEach(note => midiEvents.push([startTimeTicks -1, midiChannel - 0x10, note, 0])); activePadNotes = null; } } if (activePadNotes) { const endTimeTicks = NUM_STEPS * ticksPerStep; activePadNotes.forEach(note => midiEvents.push([endTimeTicks -1, midiChannel - 0x10, note, 0])); } } else { currentSeqArray.forEach((noteName, stepIndex) => { if (noteName !== '-') { const midiNote = noteToMidi(noteName); if (midiNote === null) return; const startTimeTicks = stepIndex * ticksPerStep; midiEvents.push([startTimeTicks, midiChannel, midiNote, (instr.synthType === 'pluck' ? 80 : 90) ]); midiEvents.push([startTimeTicks + ticksPerStep -1, midiChannel - 0x10, midiNote, 0]); } }); } } else { const midiNote = midiNoteMap[instr.id]; if (!midiNote || !sequence[instr.id]) return; sequence[instr.id].forEach((isActive, stepIndex) => { if (isActive) { const startTimeTicks = stepIndex * ticksPerStep; midiEvents.push([startTimeTicks, 0x99, midiNote, 100]); midiEvents.push([startTimeTicks + ticksPerStep -1 , 0x89, midiNote, 0]); } }); } }); midiEvents.sort((a,b)=>{if(a[0]!==b[0])return a[0]-b[0]; if((a[1]&0xF0)===0x80&&(b[1]&0xF0)===0x90)return -1; if((a[1]&0xF0)===0x90&&(b[1]&0xF0)===0x80)return 1; return 0;}); let lastTick=0; let finalMidiEvents=[]; for(const event of midiEvents){const deltaTime=event[0]-lastTick; lastTick=event[0]; finalMidiEvents.push([deltaTime, ...event.slice(1)]);} const endOfTrackDelta=(NUM_STEPS*ticksPerStep)-lastTick; finalMidiEvents.push([Math.max(0,endOfTrackDelta),0xFF,0x2F,0x00]); const trackChunks=[createTrackChunk(finalMidiEvents)]; const midiData=createMidiFile(trackChunks); downloadMIDI(midiData,`synthwave_riff_${currentEditingRiffId}.mid`);}
+        function noteToMidi(noteName) { if(noteName==='-')return null; const np=noteName.match(/([A-G]#?)([0-9])/); if(!np)return null; const p=np[1];const o=parseInt(np[2]); const nm={'C':0,'C#':1,'D':2,'D#':3,'E':4,'F':5,'F#':6,'G':7,'G#':8,'A':9,'A#':10,'B':11}; if(!(p in nm))return null; return nm[p]+(o+1)*12; }
+        function createTrackChunk(events) { let td=[]; events.forEach(e=>{let dt=e[0];let b=[];do{b.unshift(dt&0x7F);dt>>=7;}while(dt>0); b.forEach((val,i)=>{if(i<b.length-1)b[i]|=0x80;}); td.push(...b);td.push(...e.slice(1));}); let c=[0x4D,0x54,0x72,0x6B,(td.length>>24)&0xFF,(td.length>>16)&0xFF,(td.length>>8)&0xFF,td.length&0xFF,...td]; return c;}
+        function createMidiFile(trackChunks) { let h=[0x4D,0x54,0x68,0x64,0,0,0,6,0,1,(trackChunks.length>>8)&0xFF,trackChunks.length&0xFF,(PPQN>>8)&0xFF,PPQN&0xFF]; let mb=[...h]; trackChunks.forEach(c=>mb.push(...c)); return new Uint8Array(mb);}
+        function downloadFile(data, filename, type) { const blob = new Blob([data], { type: type }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); }
+        function downloadMIDI(midiData,filename){ downloadFile(midiData, filename, 'audio/midi');}
+        
+        function updateRiffDisplay() { currentRiffDisplay.textContent = `- Riff ${currentEditingRiffId} (Editing)`; editRiffBtns.forEach(btn => { btn.style.borderColor = btn.dataset.riff === currentEditingRiffId ? 'var(--accent-color)' : 'var(--secondary-color)'; }); }
+        function saveToRiff(riffId) { if (isPlaying) playStop(); if (isSongModePlaying) stopSongPlayback(); songRiffs[riffId] = getPatternData(); alert(`Current pattern saved to Riff ${riffId}.`); }
+        
+        function editRiff(riffId) { 
+            if (isPlaying) playStop(); 
+            if (isSongModePlaying) stopSongPlayback(); 
+            currentEditingRiffId = riffId; 
+            if (songRiffs[riffId]) { 
+                applyLoadedPattern(songRiffs[riffId], true); 
+            } else { 
+                clearAllSequencerData(false); 
+                // Ensure NUM_STEPS from UI is used for new riffs.
+                NUM_STEPS = parseInt(seqLengthSelect.value); 
+                instrumentDefs.forEach(instr => { 
+                    if(instr.isSynth) {
+                        synthSequences[instr.synthType] = Array(NUM_STEPS).fill('-');
+                    } else {
+                         sequence[instr.id] = Array(NUM_STEPS).fill(false);
+                         // For a new riff, clear any assigned sample from a previous riff (for this view)
+                         currentLoadedSamples[instr.id] = null;
+                         samples[instr.id] = null;
+                    }
+                }); 
+                createSequencerGrid(); 
+                updateAllStepVisuals(); 
+                populateDrumSampleSelectors(); // Ensure dropdowns are correct for a new/empty riff
+            } 
+            updateRiffDisplay(); 
+        }
+
+        function loadRiffDataForPlayback(riffId) { 
+            const riffData = songRiffs[riffId]; 
+            if (!riffData) { 
+                console.error(`Riff ${riffId} not found for playback.`); 
+                stopSongPlayback(); // Stop if riff data is missing
+                alert(`Error: Riff ${riffId} data is missing. Song playback stopped.`);
+                return false; 
+            } 
+            
+            // Set NUM_STEPS for playback based on the riff's stored value
+            NUM_STEPS = riffData.numSteps; 
+            // seqLengthSelect.value = NUM_STEPS; // Optionally update UI, or let editRiff handle UI update
+            
+            // If grid needs rebuilding due to NUM_STEPS change for playback
+            if (document.getElementById(`${instrumentDefs[0].id}Steps`)?.children.length !== NUM_STEPS) {
+                createSequencerGrid();
+            }
+
+            sequence = JSON.parse(JSON.stringify(riffData.drumSequence)); 
+            synthSequences = JSON.parse(JSON.stringify(riffData.synthSequences)); 
+            currentSynthSounds = { ...riffData.currentSynthSounds }; 
+            currentLoadedSamples = { ...riffData.loadedSamples }; 
+            
+            instrumentDefs.forEach(instr => { 
+                if (instr.isSynth) { 
+                    const selector = document.getElementById(`${instr.synthType}SoundSelector`); 
+                    if (selector && currentSynthSounds[instr.synthType]) { 
+                        populateSynthSoundSelector(instr.synthType); // Re-populate if custom sounds changed
+                        selector.value = currentSynthSounds[instr.synthType]; 
+                    } 
+                } else { 
+                    const expectedFileName = currentLoadedSamples[instr.id]; 
+                    if (expectedFileName && globallyLoadedSampleBuffers[expectedFileName]) { 
+                        samples[instr.id] = globallyLoadedSampleBuffers[expectedFileName]; 
+                    } else { 
+                        samples[instr.id] = null; 
+                    } 
+                } 
+            }); 
+            populateDrumSampleSelectors(); 
+            updateAllStepVisuals(); 
+            return true; 
+        }
+        function startSongPlayback() { initAudioContext(); if (isPlaying) playStop(); isSongModePlaying = true; playSongBtn.textContent = 'Stop Song'; playStopBtn.disabled = true; const structureStr = songStructureInput.value.toUpperCase(); songPlaybackStructure = structureStr.split('').filter(id => songRiffs[id]); if (songPlaybackStructure.length === 0) { alert("Song structure is empty or contains no saved riffs. Please save riffs (A, B, C) first."); stopSongPlayback(); return; } currentSongPartIndex = 0; currentStep = 0; visualStep = 0; if (!loadRiffDataForPlayback(songPlaybackStructure[currentSongPartIndex])) { alert(`Failed to load initial riff ${songPlaybackStructure[currentSongPartIndex]} for song.`); stopSongPlayback(); return; } if (audioContext.state === 'suspended') audioContext.resume(); nextNoteTime = audioContext.currentTime + 0.1; mainScheduler(); startVisualUpdates(); }
+        function stopSongPlayback() { isSongModePlaying = false; playSongBtn.textContent = 'Play Song'; playStopBtn.disabled = false; clearTimeout(schedulerIntervalId); schedulerIntervalId = null; clearInterval(visualUpdateIntervalId); visualUpdateIntervalId = null; document.querySelectorAll('.step.current').forEach(s => s.classList.remove('current')); stopAllPadSounds(); if(songRiffs[currentEditingRiffId]) { applyLoadedPattern(songRiffs[currentEditingRiffId], true); } else { editRiff(currentEditingRiffId); /* Reload current editing riff or a default state */ } }
+
+        function exportCustomSynthSounds() {
+            const jsonData = JSON.stringify(customSynthSoundDefinitions, null, 2);
+            downloadFile(jsonData, "custom_synth_sounds.swssynth", "application/json");
+        }
+
+        function importCustomSynthSounds(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const importedSounds = JSON.parse(e.target.result);
+                    for (const synthType in importedSounds) {
+                        if (customSynthSoundDefinitions.hasOwnProperty(synthType)) {
+                            Object.assign(customSynthSoundDefinitions[synthType], importedSounds[synthType]);
+                        }
+                    }
+                    updateAllSynthSoundSelectors(); 
+                    alert("Custom synth sounds imported successfully!");
+                } catch (err) {
+                    console.error("Error importing synth sounds:", err);
+                    alert("Could not import synth sounds: Invalid file format.");
+                }
+            };
+            reader.readAsText(file);
+            importSynthSoundsInput.value = ''; 
+        }
+
+        function populateGlobalScaleSelector() {
+            const currentVal = globalScaleSelect.value;
+            globalScaleSelect.innerHTML = ''; 
+            for (const scaleKey in scales) { 
+                const option = document.createElement('option'); 
+                option.value = scaleKey; 
+                let displayName = scaleKey.replace(/([A-Z])/g, ' $1'); 
+                displayName = displayName.replace(/HW$/, '(H-W)').replace(/WH$/, '(W-H)'); 
+                displayName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
+                option.textContent = displayName; 
+                globalScaleSelect.appendChild(option); 
+            }
+
+            if (scales[currentVal]) { 
+                globalScaleSelect.value = currentVal;
+                currentGlobalScale = currentVal;
+            } else if (scales[currentGlobalScale]) { 
+                 globalScaleSelect.value = currentGlobalScale;
+            } else if (Object.keys(scales).length > 0) { 
+                const firstScale = Object.keys(scales)[0];
+                globalScaleSelect.value = firstScale;
+                currentGlobalScale = firstScale;
+            } else { 
+                currentGlobalScale = '';
+            }
+        }
+
+
+        function exportCurrentScales() {
+            const jsonData = JSON.stringify(scales, null, 2);
+            downloadFile(jsonData, "custom_scales.swsscale", "application/json");
+        }
+
+        function importCustomScales(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const importedScales = JSON.parse(e.target.result);
+                    scales = { ...scales, ...importedScales }; 
+                    populateGlobalScaleSelector(); 
+                    alert("Scales imported successfully!");
+                } catch (err) {
+                    console.error("Error importing scales:", err);
+                    alert("Could not import scales: Invalid file format.");
+                }
+            };
+            reader.readAsText(file);
+            importScalesInput.value = ''; 
+        }
+
+        playStopBtn.addEventListener('click', playStop); 
+        exportMidiBtn.addEventListener('click', exportMIDI);
+        saveRiffFileBtn.addEventListener('click', saveRiffPatternToFile); 
+        loadRiffFileBtn.addEventListener('click', () => loadRiffFileInput.click()); 
+        loadRiffFileInput.addEventListener('change', loadRiffPatternFromFile);
+        globalRootNoteSelect.addEventListener('change', (e) => { currentGlobalRootNote = e.target.value; });
+        globalScaleSelect.addEventListener('change', (e) => { currentGlobalScale = e.target.value; });
+        generateRiffBtn.addEventListener('click', generateCurrentRiffContent); 
+        randomizeKeyScaleBtn.addEventListener('click', randomizeGlobalKeyScale); 
+        playSongBtn.addEventListener('click', () => { if (isSongModePlaying) stopSongPlayback(); else startSongPlayback(); });
+        editRiffBtns.forEach(btn => btn.addEventListener('click', () => editRiff(btn.dataset.riff)));
+        saveToRiffBtns.forEach(btn => btn.addEventListener('click', () => saveToRiff(btn.dataset.riff)));
+
+        exportSynthSoundsBtn.addEventListener('click', exportCustomSynthSounds);
+        importSynthSoundsBtn.addEventListener('click', () => importSynthSoundsInput.click());
+        importSynthSoundsInput.addEventListener('change', importCustomSynthSounds);
+        exportScalesBtn.addEventListener('click', exportCurrentScales);
+        importScalesBtn.addEventListener('click', () => importScalesInput.click());
+        importScalesInput.addEventListener('change', importCustomScales);
+
+        window.onload = () => {
+            allNotes.forEach(note => { const option = document.createElement('option'); option.value = note; option.textContent = note; if (note === currentGlobalRootNote) option.selected = true; globalRootNoteSelect.appendChild(option); });
+            populateGlobalScaleSelector(); 
+            for (let i = 1; i <= 32; i++) { const option = document.createElement('option'); option.value = i; option.textContent = i; if (i === NUM_STEPS) option.selected = true; seqLengthSelect.appendChild(option); }
+            
+            instrumentDefs.forEach(instr => { 
+                rowVolumes[instr.id] = instr.defaultVol; 
+                if (!instr.isSynth) {
+                     currentLoadedSamples[instr.id] = null; 
+                     samples[instr.id] = null; 
+                }
+            });
+
+            generateSequencerRowsHTML(); 
+            editRiff(currentEditingRiffId); 
+
+            tempoInput.value = bpm; tempoRangeSlider.value = bpm; 
+            handleMasterVolumeChange(parseFloat(masterVolumeSlider.value)); 
+        };
+    </script>
+</body>
+</html>
+
