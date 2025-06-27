@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -283,6 +282,32 @@
         
         const hiddenSampleLoader = document.getElementById('hiddenSampleLoader');
 
+        async function loadDefaultSamples() {
+            initAudioContext(); // Make sure AudioContext is started
+
+            const samplesToLoad = [
+                { id: 'kick', path: 'kick.wav' },
+                { id: 'snare', path: 'snare.wav' },
+                { id: 'hihat', path: 'hi-hat.wav' }
+            ];
+
+            // Using Promise.all to load them in parallel
+            await Promise.all(samplesToLoad.map(async (sampleInfo) => {
+                try {
+                    const response = await fetch(sampleInfo.path);
+                    if (!response.ok) throw new Error(`File not found or server error for ${sampleInfo.path}`);
+                    const arrayBuffer = await response.arrayBuffer();
+                    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                    
+                    globallyLoadedSampleBuffers[sampleInfo.path] = audioBuffer;
+                    samples[sampleInfo.id] = audioBuffer;
+                    currentLoadedSamples[sampleInfo.id] = sampleInfo.path;
+                    console.log(`Default sample loaded: ${sampleInfo.path}`);
+                } catch (e) {
+                    console.warn(`Could not automatically load sample "${sampleInfo.path}". Make sure the file is in the same folder as the HTML file.`, e);
+                }
+            }));
+        }
 
         function initAudioContext() { if (!audioContext) { audioContext = new (window.AudioContext || window.webkitAudioContext)(); createWhiteNoiseBuffer(); masterGainNode = audioContext.createGain(); masterGainNode.gain.value = parseFloat(masterVolumeSlider.value); masterGainNode.connect(audioContext.destination); instrumentDefs.forEach(instr => { rowGainNodes[instr.id] = audioContext.createGain(); rowGainNodes[instr.id].gain.value = rowVolumes[instr.id] !== undefined ? rowVolumes[instr.id] : instr.defaultVol; rowGainNodes[instr.id].connect(masterGainNode); }); } }
         function createWhiteNoiseBuffer() { if (!audioContext || whiteNoiseBuffer) return; const bufferSize = audioContext.sampleRate * 0.5; whiteNoiseBuffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate); const output = whiteNoiseBuffer.getChannelData(0); for (let i = 0; i < bufferSize; i++) { output[i] = Math.random() * 2 - 1; } }
@@ -1161,16 +1186,23 @@
         importScalesBtn.addEventListener('click', () => importScalesInput.click());
         importScalesInput.addEventListener('change', importCustomScales);
 
-        window.onload = () => {
+        window.onload = async () => {
+            await loadDefaultSamples(); // Load default samples first
+
             allNotes.forEach(note => { const option = document.createElement('option'); option.value = note; option.textContent = note; if (note === currentGlobalRootNote) option.selected = true; globalRootNoteSelect.appendChild(option); });
             populateGlobalScaleSelector(); 
             for (let i = 1; i <= 32; i++) { const option = document.createElement('option'); option.value = i; option.textContent = i; if (i === NUM_STEPS) option.selected = true; seqLengthSelect.appendChild(option); }
             
             instrumentDefs.forEach(instr => { 
-                rowVolumes[instr.id] = instr.defaultVol; 
+                // Default volumes are set if not already present
+                if (rowVolumes[instr.id] === undefined) rowVolumes[instr.id] = instr.defaultVol; 
+                
+                // Initialize other drum tracks that weren't default-loaded
                 if (!instr.isSynth) {
-                     currentLoadedSamples[instr.id] = null; 
-                     samples[instr.id] = null; 
+                     if (currentLoadedSamples[instr.id] === undefined) {
+                         currentLoadedSamples[instr.id] = null; 
+                         samples[instr.id] = null; 
+                     }
                 }
             });
 
@@ -1183,4 +1215,3 @@
     </script>
 </body>
 </html>
-
