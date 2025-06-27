@@ -16,10 +16,54 @@
         body { font-family: 'Roboto Mono', monospace; background-color: var(--bg-color); color: var(--text-color); display: flex; flex-direction: column; align-items: center; margin: 0; padding: 20px; overflow-x: hidden; }
         h1 { font-family: 'Orbitron', sans-serif; color: var(--primary-color); text-shadow: var(--text-glow); letter-spacing: 2px; margin-bottom: 10px; text-align: center; }
         
+        /* Collapsible Section Styles */
+        .collapsible-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .section-header {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--secondary-color);
+            text-shadow: var(--text-glow);
+            cursor: pointer;
+            padding: 5px 15px;
+            margin: 0;
+            border: 1px solid var(--secondary-color);
+            border-radius: 5px;
+            background-color: var(--bg-color);
+            box-shadow: 0 0 5px var(--secondary-color);
+            width: 95%;
+            max-width: 1100px;
+            text-align: left;
+            font-size: 1em;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s ease;
+            -webkit-user-select: none; /* Safari */
+            -ms-user-select: none; /* IE 10+ */
+            user-select: none; /* Standard syntax */
+        }
+        .section-header:hover {
+            color: var(--bg-color);
+            background-color: var(--secondary-color);
+        }
+        .section-header .toggle-indicator {
+            font-family: 'Roboto Mono', monospace;
+            font-weight: bold;
+        }
+        .section-content.collapsed {
+            display: none;
+        }
+
         .controls, .song-controls, .data-controls { 
             display: flex; flex-wrap: wrap; align-items: center; justify-content: center; 
             gap: 8px 12px; 
-            margin-bottom: 15px; padding: 12px; 
+            margin-top: 5px; /* Added margin for spacing from header */
+            padding: 12px; 
             background-color: rgba(26, 9, 51, 0.8); border-radius: 8px; 
             box-shadow: var(--border-glow); width: 95%; max-width: 1100px; 
         }
@@ -60,7 +104,7 @@
 
         .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
-        .sequencer { display: grid; grid-template-columns: 170px auto; gap: 5px; padding: 10px; background-color: rgba(26, 9, 51, 0.5); border-radius: 8px; box-shadow: var(--border-glow); width: 95%; max-width: 1200px; overflow-x: auto; }
+        .sequencer { display: grid; grid-template-columns: 170px auto; gap: 5px; padding: 10px; background-color: rgba(26, 9, 51, 0.5); border-radius: 8px; box-shadow: var(--border-glow); width: 95%; max-width: 1200px; overflow-x: auto; margin-top: 5px; }
         .row-label { font-family: 'Orbitron', sans-serif; font-size: 0.8em; padding: 5px; text-align: right; color: var(--accent-color); display: flex; flex-direction: column; align-items: flex-end; justify-content: space-between; gap: 2px; }
         .row-label .instrument-name-file { display: flex; flex-direction: column; align-items: flex-end; margin-bottom: 1px;}
         .row-label .instrument-name-file > span { margin-bottom: 2px;} 
@@ -113,72 +157,83 @@
 <body>
     <h1>Synthwave Sequencer <span id="currentRiffDisplay"></span></h1>
 
-    <div class="controls">
-        <button id="playStopBtn">Play</button>
-        <div class="input-group"> 
-            <label for="tempoRangeSlider" class="visually-hidden">Tempo Slider</label>
-            <input type="range" id="tempoRangeSlider" min="40" max="240" value="70" title="Tempo Slider">
-            <label for="tempoInput" class="visually-hidden">Tempo BPM</label>
-            <input type="number" id="tempoInput" min="40" max="240" value="70" title="Beats Per Minute">
-            <span class="input-unit">BPM</span>
+    <div class="collapsible-container">
+        <h2 class="section-header">Main Controls <span class="toggle-indicator">[ - ]</span></h2>
+        <div class="controls section-content">
+            <button id="playStopBtn">Play</button>
+            <div class="input-group"> 
+                <label for="tempoRangeSlider" class="visually-hidden">Tempo Slider</label>
+                <input type="range" id="tempoRangeSlider" min="40" max="240" value="70" title="Tempo Slider">
+                <label for="tempoInput" class="visually-hidden">Tempo BPM</label>
+                <input type="number" id="tempoInput" min="40" max="240" value="70" title="Beats Per Minute">
+                <span class="input-unit">BPM</span>
+            </div>
+            <button id="tapTempoBtn">Tap</button>
+            <div class="input-group"> 
+                <label for="seqLengthSelect" class="visually-hidden">Sequence Length</label>
+                <select id="seqLengthSelect" title="Number of Steps"></select>
+                <span class="input-unit">Steps</span>
+            </div>
+            <div class="control-group"> 
+                <label for="globalRootNoteSelect" class="visually-hidden">Root Note</label>
+                <select id="globalRootNoteSelect" title="Global Root Note"></select>
+                <label for="globalScaleSelect" class="visually-hidden">Scale</label>
+                <select id="globalScaleSelect" title="Global Scale"></select>
+                <button id="randomizeKeyScaleBtn" title="Randomize Key & Scale">RND Key/Scale</button>
+            </div>
+             <div class="input-group"> 
+                <label for="masterVolumeSlider" class="visually-hidden">Master Volume</label>
+                <input type="range" id="masterVolumeSlider" min="0" max="1" step="0.01" value="0.8" title="Master Volume">
+                <label for="masterVolumeInput" class="visually-hidden">Master Volume Value</label>
+                <input type="number" id="masterVolumeInput" min="0" max="1" step="0.01" value="0.8" title="Master Volume Value">
+                <span class="input-unit">Master</span>
+            </div>
+            <button id="clearPatternBtn">Clear Riff</button> 
+            <button id="generateRiffBtn">Generate Riff</button> 
+            <button id="exportMidiBtn">Export MIDI</button>
+            <button id="saveRiffFileBtn">Save Riff File</button> 
+            <label for="loadRiffFileInput" class="visually-hidden">Load Riff File</label> 
+            <input type="file" id="loadRiffFileInput" accept=".json, .swsseq" style="display: none;">
+            <button id="loadRiffFileBtn">Load Riff File</button> 
         </div>
-        <button id="tapTempoBtn">Tap</button>
-        <div class="input-group"> 
-            <label for="seqLengthSelect" class="visually-hidden">Sequence Length</label>
-            <select id="seqLengthSelect" title="Number of Steps"></select>
-            <span class="input-unit">Steps</span>
-        </div>
-        <div class="control-group"> 
-            <label for="globalRootNoteSelect" class="visually-hidden">Root Note</label>
-            <select id="globalRootNoteSelect" title="Global Root Note"></select>
-            <label for="globalScaleSelect" class="visually-hidden">Scale</label>
-            <select id="globalScaleSelect" title="Global Scale"></select>
-            <button id="randomizeKeyScaleBtn" title="Randomize Key & Scale">RND Key/Scale</button>
-        </div>
-         <div class="input-group"> 
-            <label for="masterVolumeSlider" class="visually-hidden">Master Volume</label>
-            <input type="range" id="masterVolumeSlider" min="0" max="1" step="0.01" value="0.8" title="Master Volume">
-            <label for="masterVolumeInput" class="visually-hidden">Master Volume Value</label>
-            <input type="number" id="masterVolumeInput" min="0" max="1" step="0.01" value="0.8" title="Master Volume Value">
-            <span class="input-unit">Master</span>
-        </div>
-        <button id="clearPatternBtn">Clear Riff</button> 
-        <button id="generateRiffBtn">Generate Riff</button> 
-        <button id="exportMidiBtn">Export MIDI</button>
-        <button id="saveRiffFileBtn">Save Riff File</button> 
-        <label for="loadRiffFileInput" class="visually-hidden">Load Riff File</label> 
-        <input type="file" id="loadRiffFileInput" accept=".json, .swsseq" style="display: none;">
-        <button id="loadRiffFileBtn">Load Riff File</button> 
     </div>
 
-    <div class="song-controls">
-        <label for="songStructureInput">Song Structure:</label>
-        <input type="text" id="songStructureInput" value="ABABCB" title="Define song structure (e.g., ABAB, ABC)">
-        <button id="playSongBtn">Play Song</button>
-        <span style="margin-left: 10px;">Riffs:</span>
-        <button id="editRiffABtn" class="riff-edit-btn" data-riff="A">Edit A</button>
-        <button id="editRiffBBtn" class="riff-edit-btn" data-riff="B">Edit B</button>
-        <button id="editRiffCBtn" class="riff-edit-btn" data-riff="C">Edit C</button>
-        <button id="saveToRiffABtn" class="riff-save-btn" data-riff="A">Save to A</button>
-        <button id="saveToRiffBBtn" class="riff-save-btn" data-riff="B">Save to B</button>
-        <button id="saveToRiffCBtn" class="riff-save-btn" data-riff="C">Save to C</button>
+    <div class="collapsible-container">
+        <h2 class="section-header">Song Mode <span class="toggle-indicator">[ - ]</span></h2>
+        <div class="song-controls section-content">
+            <label for="songStructureInput">Song Structure:</label>
+            <input type="text" id="songStructureInput" value="ABABCB" title="Define song structure (e.g., ABAB, ABC)">
+            <button id="playSongBtn">Play Song</button>
+            <span style="margin-left: 10px;">Riffs:</span>
+            <button id="editRiffABtn" class="riff-edit-btn" data-riff="A">Edit A</button>
+            <button id="editRiffBBtn" class="riff-edit-btn" data-riff="B">Edit B</button>
+            <button id="editRiffCBtn" class="riff-edit-btn" data-riff="C">Edit C</button>
+            <button id="saveToRiffABtn" class="riff-save-btn" data-riff="A">Save to A</button>
+            <button id="saveToRiffBBtn" class="riff-save-btn" data-riff="B">Save to B</button>
+            <button id="saveToRiffCBtn" class="riff-save-btn" data-riff="C">Save to C</button>
+        </div>
     </div>
 
-    <div class="data-controls">
-        <button id="exportSynthSoundsBtn">Export Synth Sounds</button>
-        <label for="importSynthSoundsInput" class="visually-hidden">Import Synth Sounds File</label>
-        <input type="file" id="importSynthSoundsInput" accept=".swssynth" style="display: none;">
-        <button id="importSynthSoundsBtn">Import Synth Sounds</button>
-        <span style="margin-left: 15px;"></span>
-        <button id="exportScalesBtn">Export Scales</button>
-        <label for="importScalesInput" class="visually-hidden">Import Scales File</label>
-        <input type="file" id="importScalesInput" accept=".swsscale" style="display: none;">
-        <button id="importScalesBtn">Import Scales</button>
+    <div class="collapsible-container">
+        <h2 class="section-header">Data Management <span class="toggle-indicator">[ - ]</span></h2>
+        <div class="data-controls section-content">
+            <button id="exportSynthSoundsBtn">Export Synth Sounds</button>
+            <label for="importSynthSoundsInput" class="visually-hidden">Import Synth Sounds File</label>
+            <input type="file" id="importSynthSoundsInput" accept=".swssynth" style="display: none;">
+            <button id="importSynthSoundsBtn">Import Synth Sounds</button>
+            <span style="margin-left: 15px;"></span>
+            <button id="exportScalesBtn">Export Scales</button>
+            <label for="importScalesInput" class="visually-hidden">Import Scales File</label>
+            <input type="file" id="importScalesInput" accept=".swsscale" style="display: none;">
+            <button id="importScalesBtn">Import Scales</button>
+        </div>
     </div>
 
-
-    <div class="sequencer" id="sequencerRows">
-        <!-- Rows will be generated by JS -->
+    <div class="collapsible-container">
+        <h2 class="section-header">Sequencer Grid <span class="toggle-indicator">[ - ]</span></h2>
+        <div class="sequencer section-content" id="sequencerRows">
+            <!-- Rows will be generated by JS -->
+        </div>
     </div>
     
     <input type="file" id="hiddenSampleLoader" accept=".wav" style="display: none;">
@@ -885,15 +940,13 @@
             if (isSongModePlaying) stopSongPlayback(); 
             if (isExternalFileLoad && data.bpm) updateTempo(data.bpm); 
             
-            // Before changing NUM_STEPS, if it will change, store it.
             const oldNumSteps = NUM_STEPS;
             if (data.numSteps) {
-                 NUM_STEPS = data.numSteps; // Update global NUM_STEPS first
+                 NUM_STEPS = data.numSteps;
             }
 
             if (oldNumSteps !== NUM_STEPS || (document.getElementById(`${instrumentDefs[0].id}Steps`) && document.getElementById(`${instrumentDefs[0].id}Steps`).children.length !== NUM_STEPS)) {
-                seqLengthSelect.value = NUM_STEPS; // Update UI selector
-                // createSequencerGrid will be called because NUM_STEPS changed or grid is inconsistent
+                seqLengthSelect.value = NUM_STEPS;
             }
             
             handleMasterVolumeChange(data.masterVolume !== undefined ? data.masterVolume : 0.8); 
@@ -981,7 +1034,6 @@
                 }; 
             } 
             
-            // Ensure grid is recreated if NUM_STEPS changed or if it's inconsistent
             if (oldNumSteps !== NUM_STEPS || (document.getElementById(`${instrumentDefs[0].id}Steps`) && document.getElementById(`${instrumentDefs[0].id}Steps`).children.length !== NUM_STEPS) ) {
                 createSequencerGrid();
             }
@@ -1021,21 +1073,19 @@
                 applyLoadedPattern(songRiffs[riffId], true); 
             } else { 
                 clearAllSequencerData(false); 
-                // Ensure NUM_STEPS from UI is used for new riffs.
                 NUM_STEPS = parseInt(seqLengthSelect.value); 
                 instrumentDefs.forEach(instr => { 
                     if(instr.isSynth) {
                         synthSequences[instr.synthType] = Array(NUM_STEPS).fill('-');
                     } else {
                          sequence[instr.id] = Array(NUM_STEPS).fill(false);
-                         // For a new riff, clear any assigned sample from a previous riff (for this view)
                          currentLoadedSamples[instr.id] = null;
                          samples[instr.id] = null;
                     }
                 }); 
                 createSequencerGrid(); 
                 updateAllStepVisuals(); 
-                populateDrumSampleSelectors(); // Ensure dropdowns are correct for a new/empty riff
+                populateDrumSampleSelectors();
             } 
             updateRiffDisplay(); 
         }
@@ -1044,16 +1094,13 @@
             const riffData = songRiffs[riffId]; 
             if (!riffData) { 
                 console.error(`Riff ${riffId} not found for playback.`); 
-                stopSongPlayback(); // Stop if riff data is missing
+                stopSongPlayback();
                 alert(`Error: Riff ${riffId} data is missing. Song playback stopped.`);
                 return false; 
             } 
             
-            // Set NUM_STEPS for playback based on the riff's stored value
             NUM_STEPS = riffData.numSteps; 
-            // seqLengthSelect.value = NUM_STEPS; // Optionally update UI, or let editRiff handle UI update
             
-            // If grid needs rebuilding due to NUM_STEPS change for playback
             if (document.getElementById(`${instrumentDefs[0].id}Steps`)?.children.length !== NUM_STEPS) {
                 createSequencerGrid();
             }
@@ -1067,7 +1114,7 @@
                 if (instr.isSynth) { 
                     const selector = document.getElementById(`${instr.synthType}SoundSelector`); 
                     if (selector && currentSynthSounds[instr.synthType]) { 
-                        populateSynthSoundSelector(instr.synthType); // Re-populate if custom sounds changed
+                        populateSynthSoundSelector(instr.synthType);
                         selector.value = currentSynthSounds[instr.synthType]; 
                     } 
                 } else { 
@@ -1083,8 +1130,53 @@
             updateAllStepVisuals(); 
             return true; 
         }
-        function startSongPlayback() { initAudioContext(); if (isPlaying) playStop(); isSongModePlaying = true; playSongBtn.textContent = 'Stop Song'; playStopBtn.disabled = true; const structureStr = songStructureInput.value.toUpperCase(); songPlaybackStructure = structureStr.split('').filter(id => songRiffs[id]); if (songPlaybackStructure.length === 0) { alert("Song structure is empty or contains no saved riffs. Please save riffs (A, B, C) first."); stopSongPlayback(); return; } currentSongPartIndex = 0; currentStep = 0; visualStep = 0; if (!loadRiffDataForPlayback(songPlaybackStructure[currentSongPartIndex])) { alert(`Failed to load initial riff ${songPlaybackStructure[currentSongPartIndex]} for song.`); stopSongPlayback(); return; } if (audioContext.state === 'suspended') audioContext.resume(); nextNoteTime = audioContext.currentTime + 0.1; mainScheduler(); startVisualUpdates(); }
-        function stopSongPlayback() { isSongModePlaying = false; playSongBtn.textContent = 'Play Song'; playStopBtn.disabled = false; clearTimeout(schedulerIntervalId); schedulerIntervalId = null; clearInterval(visualUpdateIntervalId); visualUpdateIntervalId = null; document.querySelectorAll('.step.current').forEach(s => s.classList.remove('current')); stopAllPadSounds(); if(songRiffs[currentEditingRiffId]) { applyLoadedPattern(songRiffs[currentEditingRiffId], true); } else { editRiff(currentEditingRiffId); /* Reload current editing riff or a default state */ } }
+
+        function startSongPlayback() {
+            initAudioContext();
+            if (isPlaying) playStop();
+
+            const structureStr = songStructureInput.value.toUpperCase();
+            const proposedPlaybackStructure = structureStr.split('').filter(id => songRiffs[id]);
+
+            if (proposedPlaybackStructure.length === 0) {
+                alert("Song structure is empty or contains no saved riffs. Please save riffs (A, B, C) first.");
+                return; // Exit without changing any state.
+            }
+            
+            // Now that we know it can play, set the state.
+            isSongModePlaying = true;
+            playSongBtn.textContent = 'Stop Song';
+            playStopBtn.disabled = true;
+            songPlaybackStructure = proposedPlaybackStructure;
+
+            currentSongPartIndex = 0;
+            currentStep = 0;
+            visualStep = 0;
+            if (!loadRiffDataForPlayback(songPlaybackStructure[currentSongPartIndex])) {
+                alert(`Failed to load initial riff ${songPlaybackStructure[currentSongPartIndex]} for song.`);
+                stopSongPlayback(); // This case is different, playback was attempted but failed, so stopping is OK.
+                return;
+            }
+            if (audioContext.state === 'suspended') audioContext.resume();
+            nextNoteTime = audioContext.currentTime + 0.1;
+            mainScheduler();
+            startVisualUpdates();
+        }
+
+        function stopSongPlayback() { 
+            isSongModePlaying = false; 
+            playSongBtn.textContent = 'Play Song'; 
+            playStopBtn.disabled = false; 
+            clearTimeout(schedulerIntervalId); schedulerIntervalId = null; 
+            clearInterval(visualUpdateIntervalId); visualUpdateIntervalId = null; 
+            document.querySelectorAll('.step.current').forEach(s => s.classList.remove('current')); 
+            stopAllPadSounds(); 
+            if(songRiffs[currentEditingRiffId]) { 
+                applyLoadedPattern(songRiffs[currentEditingRiffId], true); 
+            } else { 
+                editRiff(currentEditingRiffId);
+            } 
+        }
 
         function exportCustomSynthSounds() {
             const jsonData = JSON.stringify(customSynthSoundDefinitions, null, 2);
@@ -1165,6 +1257,26 @@
             reader.readAsText(file);
             importScalesInput.value = ''; 
         }
+        
+        function initializeCollapsibleSections() {
+            const headers = document.querySelectorAll('.section-header');
+            headers.forEach(header => {
+                header.addEventListener('click', () => {
+                    const container = header.parentElement;
+                    const content = container.querySelector('.section-content');
+                    const indicator = header.querySelector('.toggle-indicator');
+                    
+                    content.classList.toggle('collapsed');
+                    
+                    if (content.classList.contains('collapsed')) {
+                        indicator.textContent = '[ + ]';
+                    } else {
+                        indicator.textContent = '[ - ]';
+                    }
+                });
+            });
+        }
+
 
         playStopBtn.addEventListener('click', playStop); 
         exportMidiBtn.addEventListener('click', exportMIDI);
@@ -1187,17 +1299,15 @@
         importScalesInput.addEventListener('change', importCustomScales);
 
         window.onload = async () => {
-            await loadDefaultSamples(); // Load default samples first
+            initializeCollapsibleSections();
+            await loadDefaultSamples();
 
             allNotes.forEach(note => { const option = document.createElement('option'); option.value = note; option.textContent = note; if (note === currentGlobalRootNote) option.selected = true; globalRootNoteSelect.appendChild(option); });
             populateGlobalScaleSelector(); 
             for (let i = 1; i <= 32; i++) { const option = document.createElement('option'); option.value = i; option.textContent = i; if (i === NUM_STEPS) option.selected = true; seqLengthSelect.appendChild(option); }
             
             instrumentDefs.forEach(instr => { 
-                // Default volumes are set if not already present
                 if (rowVolumes[instr.id] === undefined) rowVolumes[instr.id] = instr.defaultVol; 
-                
-                // Initialize other drum tracks that weren't default-loaded
                 if (!instr.isSynth) {
                      if (currentLoadedSamples[instr.id] === undefined) {
                          currentLoadedSamples[instr.id] = null; 
