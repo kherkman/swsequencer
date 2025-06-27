@@ -142,7 +142,7 @@
         .row-actions button:hover { background-color: var(--secondary-color); color: var(--bg-color); box-shadow: 0 0 8px var(--primary-color), 0 0 15px var(--primary-color); }
 
         .steps-container { display: grid; gap: 4px; align-items: center; min-width: calc(1 * (30px + 4px)); }
-        .step { width: 30px; height: 30px; background-color: #333; border: 1px solid #555; cursor: pointer; transition: background-color 0.1s ease, box-shadow 0.2s ease; border-radius: 3px; display: flex; align-items: center; justify-content: center; }
+        .step { width: 30px; height: 30px; background-color: #333; border: 1px solid #555; cursor: pointer; transition: background-color: 0.1s ease, box-shadow 0.2s ease; border-radius: 3px; display: flex; align-items: center; justify-content: center; }
         .step.active { background-color: var(--primary-color); box-shadow: 0 0 8px var(--primary-color); }
         .step.current { outline: 2px solid var(--secondary-color); box-shadow: 0 0 8px var(--secondary-color), 0 0 15px var(--secondary-color); }
         .step.active.current { background-color: var(--accent-color); box-shadow: 0 0 8px var(--accent-color), 0 0 15px var(--accent-color); }
@@ -246,6 +246,13 @@
     </div>
 
     <script>
+        // --- SECURITY: A simple sanitizer to prevent XSS from file uploads. ---
+        function sanitizeHTML(str) {
+            const temp = document.createElement('div');
+            temp.textContent = str;
+            return temp.innerHTML;
+        }
+
         let NUM_STEPS = 16; 
         const instrumentDefs = [ 
             { id: 'kick', name: 'Kick', defaultVol: 1.0 }, { id: 'snare', name: 'Snare', defaultVol: 1.0 },
@@ -338,30 +345,50 @@
         const hiddenSampleLoader = document.getElementById('hiddenSampleLoader');
 
         async function loadDefaultSamples() {
-            initAudioContext(); // Make sure AudioContext is started
-
-            const samplesToLoad = [
-                { id: 'kick', path: 'kick.wav' },
-                { id: 'snare', path: 'snare.wav' },
-                { id: 'hihat', path: 'hi-hat.wav' }
-            ];
-
-            // Using Promise.all to load them in parallel
-            await Promise.all(samplesToLoad.map(async (sampleInfo) => {
+            initAudioContext(); 
+            
+            const loadSample = async (path, id = null) => {
                 try {
-                    const response = await fetch(sampleInfo.path);
-                    if (!response.ok) throw new Error(`File not found or server error for ${sampleInfo.path}`);
+                    const response = await fetch(path);
+                    if (!response.ok) return; // Fail silently if file not found
                     const arrayBuffer = await response.arrayBuffer();
                     const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
                     
-                    globallyLoadedSampleBuffers[sampleInfo.path] = audioBuffer;
-                    samples[sampleInfo.id] = audioBuffer;
-                    currentLoadedSamples[sampleInfo.id] = sampleInfo.path;
-                    console.log(`Default sample loaded: ${sampleInfo.path}`);
+                    globallyLoadedSampleBuffers[path] = audioBuffer;
+                    if (id) { // Assign to a specific track as default
+                        samples[id] = audioBuffer;
+                        currentLoadedSamples[id] = path;
+                    }
+                    console.log(`Auto-loaded sample: ${path}`);
                 } catch (e) {
-                    console.warn(`Could not automatically load sample "${sampleInfo.path}". Make sure the file is in the same folder as the HTML file.`, e);
+                    // Fail silently, as requested
                 }
-            }));
+            };
+
+            // List of default samples to assign to tracks
+            const defaultSamplesToAssign = [
+                { id: 'kick', path: 'kick.wav' },
+                { id: 'snare', path: 'snare.wav' },
+                { id: 'hihat', path: 'hi-hat.wav' },
+                { id: 'cymbal', path: 'cymbal.wav' },
+                { id: 'tom1', path: 'tom.wav' }
+            ];
+
+            // Generate list of all numbered samples to load into the global pool
+            const instrumentBases = ['kick', 'snare', 'hi-hat', 'cymbal', 'tom'];
+            const numberedSamplesToLoad = [];
+            for (const base of instrumentBases) {
+                for (let i = 1; i <= 9; i++) {
+                    numberedSamplesToLoad.push(`${base}${i}.wav`);
+                }
+            }
+
+            // Create promises for all loading operations
+            const defaultPromises = defaultSamplesToAssign.map(s => loadSample(s.path, s.id));
+            const numberedPromises = numberedSamplesToLoad.map(path => loadSample(path)); // No ID, just load to global pool
+
+            // Run all loads in parallel and wait for them to complete
+            await Promise.all([...defaultPromises, ...numberedPromises]);
         }
 
         function initAudioContext() { if (!audioContext) { audioContext = new (window.AudioContext || window.webkitAudioContext)(); createWhiteNoiseBuffer(); masterGainNode = audioContext.createGain(); masterGainNode.gain.value = parseFloat(masterVolumeSlider.value); masterGainNode.connect(audioContext.destination); instrumentDefs.forEach(instr => { rowGainNodes[instr.id] = audioContext.createGain(); rowGainNodes[instr.id].gain.value = rowVolumes[instr.id] !== undefined ? rowVolumes[instr.id] : instr.defaultVol; rowGainNodes[instr.id].connect(masterGainNode); }); } }
@@ -379,7 +406,7 @@
                 instrumentDefinition.soundOptions.forEach(opt => {
                     const option = document.createElement('option');
                     option.value = opt;
-                    option.textContent = opt; 
+                    option.textContent = sanitizeHTML(opt); 
                     selector.appendChild(option);
                 });
             }
@@ -389,11 +416,11 @@
                     if (!instrumentDefinition.soundOptions.includes(customSoundName)) {
                         const option = document.createElement('option');
                         option.value = customSoundName;
-                        option.textContent = `[C] ${customSoundName}`; 
+                        option.textContent = `[C] ${sanitizeHTML(customSoundName)}`; 
                         selector.appendChild(option);
                     } else { 
                         const existingOpt = Array.from(selector.options).find(o => o.value === customSoundName);
-                        if (existingOpt) existingOpt.textContent = `[C] ${customSoundName}`; 
+                        if (existingOpt) existingOpt.textContent = `[C] ${sanitizeHTML(customSoundName)}`; 
                     }
                 });
             }
@@ -432,25 +459,19 @@
                     Object.keys(globallyLoadedSampleBuffers).forEach(fileName => {
                         const option = document.createElement('option');
                         option.value = fileName;
-                        option.textContent = fileName;
+                        option.textContent = sanitizeHTML(fileName);
                         selectElement.appendChild(option);
                     });
                     
                     if (currentSelectedFile && globallyLoadedSampleBuffers[currentSelectedFile]) {
                         selectElement.value = currentSelectedFile;
-                    } else if (currentSelectedFile) { // File name known, but buffer not loaded in this session
-                        // Add it as an option so the name is visible, but it won't play until re-loaded
+                    } else if (currentSelectedFile) { 
                         let found = false;
-                        for(let opt of selectElement.options) {
-                            if(opt.value === currentSelectedFile) {
-                                found = true;
-                                break;
-                            }
-                        }
+                        for(let opt of selectElement.options) { if(opt.value === currentSelectedFile) { found = true; break; }}
                         if(!found) {
                             const missingOption = document.createElement('option');
                             missingOption.value = currentSelectedFile;
-                            missingOption.textContent = `${currentSelectedFile} (Load needed)`;
+                            missingOption.textContent = `${sanitizeHTML(currentSelectedFile)} (Load needed)`;
                             missingOption.style.fontStyle = 'italic';
                             selectElement.appendChild(missingOption);
                         }
@@ -493,10 +514,10 @@
                         if (selectedFileName && globallyLoadedSampleBuffers[selectedFileName]) {
                             samples[instr.id] = globallyLoadedSampleBuffers[selectedFileName];
                             currentLoadedSamples[instr.id] = selectedFileName;
-                        } else if (selectedFileName) { // Name selected, but buffer not loaded
+                        } else if (selectedFileName) {
                             samples[instr.id] = null;
-                            currentLoadedSamples[instr.id] = selectedFileName; // Keep the name, user needs to load it
-                             alert(`Sample "${selectedFileName}" for ${instr.name} is not loaded in this session. Please use the 'Load...' button to load it.`);
+                            currentLoadedSamples[instr.id] = selectedFileName;
+                             alert(`Sample "${selectedFileName}" for ${instr.name} is not loaded. Please use the 'Load...' button to load it.`);
                         }
                          else {
                             samples[instr.id] = null;
@@ -602,18 +623,19 @@
             reader.onload = async (e) => {
                 try {
                     const audioBuffer = await audioContext.decodeAudioData(e.target.result);
-                    globallyLoadedSampleBuffers[file.name] = audioBuffer;
+                    const safeFileName = sanitizeHTML(file.name);
+                    globallyLoadedSampleBuffers[safeFileName] = audioBuffer;
                     samples[targetInstrumentId] = audioBuffer;
-                    currentLoadedSamples[targetInstrumentId] = file.name;
+                    currentLoadedSamples[targetInstrumentId] = safeFileName;
                     
                     populateDrumSampleSelectors(); 
                     const targetSelector = document.getElementById(`${targetInstrumentId}SampleSelector`);
-                    if (targetSelector) targetSelector.value = file.name;
+                    if (targetSelector) targetSelector.value = safeFileName;
 
-                    alert(`Sample "${file.name}" loaded for ${instrumentDefs.find(i=>i.id===targetInstrumentId).name}.`);
+                    alert(`Sample "${safeFileName}" loaded for ${instrumentDefs.find(i=>i.id===targetInstrumentId).name}.`);
 
                 } catch (err) {
-                    alert(`Could not load sample "${file.name}". Ensure it's a valid WAV file.\nError: ${err.message}`);
+                    alert(`Could not load sample. Ensure it's a valid WAV file.\nError: ${err.message}`);
                     if (currentLoadedSamples[targetInstrumentId] === file.name) {
                         samples[targetInstrumentId] = null;
                         currentLoadedSamples[targetInstrumentId] = null;
@@ -933,114 +955,115 @@
         clearPatternBtn.addEventListener('click', () => clearAllSequencerData(true));
         function getPatternData() { return { version: "1.4", riffId: currentEditingRiffId, bpm: bpm, numSteps: NUM_STEPS, masterVolume: masterGainNode ? masterGainNode.gain.value : 0.8, globalRootNote: currentGlobalRootNote, globalScale: currentGlobalScale, rowVolumes: { ...rowVolumes }, currentSynthSounds: { ...currentSynthSounds }, drumSequence: JSON.parse(JSON.stringify(sequence)), synthSequences: JSON.parse(JSON.stringify(synthSequences)), loadedSamples: { ...currentLoadedSamples } }; }
         function saveRiffPatternToFile() { const dataToSave = getPatternData(); const jsonData = JSON.stringify(dataToSave, null, 2); const blob = new Blob([jsonData], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `synthwave_riff_${currentEditingRiffId}_${new Date().toISOString().slice(0,10)}.swsseq`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); }
-        function loadRiffPatternFromFile(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { try { const loadedData = JSON.parse(e.target.result); applyLoadedPattern(loadedData, false, true); if (loadedData.riffId && ['A', 'B', 'C'].includes(loadedData.riffId)) { currentEditingRiffId = loadedData.riffId; updateRiffDisplay(); } alert("Riff pattern loaded!"); } catch (err) { console.error("Error parsing pattern file:", err); alert("Could not load pattern: Invalid file format."); } }; reader.readAsText(file); loadRiffFileInput.value = ''; }
         
-        function applyLoadedPattern(data, isInternalRiffLoad = false, isExternalFileLoad = false) { 
+        function loadRiffPatternFromFile(event) { 
+            const file = event.target.files[0]; if (!file) return; 
+            const reader = new FileReader(); 
+            reader.onload = (e) => { 
+                try { 
+                    const loadedData = JSON.parse(e.target.result); 
+                    if (applyLoadedPattern(loadedData, false, true)) {
+                        if (loadedData.riffId && ['A', 'B', 'C'].includes(loadedData.riffId)) { 
+                            currentEditingRiffId = loadedData.riffId; 
+                            updateRiffDisplay(); 
+                        } 
+                        alert("Riff pattern loaded successfully!"); 
+                    }
+                } catch (err) { 
+                    console.error("Error parsing or applying pattern file:", err); 
+                    alert(`Could not load pattern: ${err.message}`); 
+                } 
+            }; 
+            reader.readAsText(file); 
+            loadRiffFileInput.value = ''; 
+        }
+        
+        // --- SECURITY: This function now rigorously validates data before applying it. ---
+        function applyLoadedPattern(data, isInternalRiffLoad = false, isExternalFileLoad = false) {
+            // Validation block
+            if (typeof data !== 'object' || data === null) { throw new Error("Invalid file format: not an object."); }
+            const validatedSteps = (typeof data.numSteps === 'number' && data.numSteps >= 1 && data.numSteps <= 32) ? Math.floor(data.numSteps) : NUM_STEPS;
+            if (isExternalFileLoad) {
+                if (typeof data.bpm !== 'number' || isNaN(data.bpm)) { throw new Error("Invalid BPM value."); }
+                const validatedBpm = Math.max(40, Math.min(240, data.bpm));
+                updateTempo(validatedBpm);
+            }
+            if (typeof data.masterVolume !== 'number' || isNaN(data.masterVolume)) { throw new Error("Invalid Master Volume value."); }
+            const validatedMasterVol = Math.max(0, Math.min(1, data.masterVolume));
+            if (!allNotes.includes(data.globalRootNote)) { throw new Error("Invalid Global Root Note."); }
+            if (!Object.keys(scales).includes(data.globalScale)) { throw new Error("Invalid Global Scale."); }
+            
+            // If we get here, the basic settings are valid. Stop playback to apply changes.
             if (isPlaying) playStop(); 
             if (isSongModePlaying) stopSongPlayback(); 
-            if (isExternalFileLoad && data.bpm) updateTempo(data.bpm); 
             
             const oldNumSteps = NUM_STEPS;
-            if (data.numSteps) {
-                 NUM_STEPS = data.numSteps;
-            }
-
-            if (oldNumSteps !== NUM_STEPS || (document.getElementById(`${instrumentDefs[0].id}Steps`) && document.getElementById(`${instrumentDefs[0].id}Steps`).children.length !== NUM_STEPS)) {
+            NUM_STEPS = validatedSteps;
+            if (oldNumSteps !== NUM_STEPS || (document.getElementById(`${instrumentDefs[0].id}Steps`)?.children.length !== NUM_STEPS)) {
                 seqLengthSelect.value = NUM_STEPS;
             }
             
-            handleMasterVolumeChange(data.masterVolume !== undefined ? data.masterVolume : 0.8); 
-            currentGlobalRootNote = data.globalRootNote || 'C'; 
+            handleMasterVolumeChange(validatedMasterVol); 
+            currentGlobalRootNote = data.globalRootNote; 
             globalRootNoteSelect.value = currentGlobalRootNote; 
-            currentGlobalScale = data.globalScale || 'minor'; 
+            currentGlobalScale = data.globalScale; 
             globalScaleSelect.value = currentGlobalScale; 
             
-            if (data.rowVolumes) { 
-                instrumentDefs.forEach(instr => { 
-                    if (data.rowVolumes[instr.id] !== undefined) { 
-                        handleRowVolumeChange(instr.id, data.rowVolumes[instr.id]); 
-                    } else { 
-                        handleRowVolumeChange(instr.id, instr.defaultVol); 
-                    } 
-                }); 
-            } else { 
-                instrumentDefs.forEach(instr => handleRowVolumeChange(instr.id, instr.defaultVol)); 
-            } 
-            
-            if (data.currentSynthSounds) { 
-                currentSynthSounds = { ...data.currentSynthSounds }; 
-            } else { 
-                currentSynthSounds = { bass: 'Reso Growl', pluck: 'Short Square Blip', lead: 'Detuned PWM Lead', pad: 'Evolving Pad' }; 
-            } 
-            updateAllSynthSoundSelectors(); 
-            
-            if (data.loadedSamples) {
-                currentLoadedSamples = { ...data.loadedSamples };
-                instrumentDefs.forEach(instr => {
-                    if (!instr.isSynth) {
-                        const expectedFileName = currentLoadedSamples[instr.id];
-                        if (expectedFileName && globallyLoadedSampleBuffers[expectedFileName]) {
-                            samples[instr.id] = globallyLoadedSampleBuffers[expectedFileName];
-                        } else {
-                            samples[instr.id] = null; 
-                        }
+            // Validate and apply row-specific settings
+            instrumentDefs.forEach(instr => { 
+                let vol = data.rowVolumes?.[instr.id];
+                if (typeof vol !== 'number' || isNaN(vol)) { vol = instr.defaultVol; }
+                handleRowVolumeChange(instr.id, Math.max(0, Math.min(1, vol))); 
+
+                if (instr.isSynth) {
+                    let soundName = data.currentSynthSounds?.[instr.synthType];
+                    // Check if the sound is a built-in or a valid custom one
+                    const allSoundOptions = [...instr.soundOptions, ...Object.keys(customSynthSoundDefinitions[instr.synthType])];
+                    if (typeof soundName !== 'string' || !allSoundOptions.includes(soundName)) {
+                        soundName = instr.soundOptions[0]; // Fallback to default
                     }
-                });
-            } else {
-                instrumentDefs.forEach(instr => {
-                    if (!instr.isSynth) {
+                    currentSynthSounds[instr.synthType] = soundName;
+                } else {
+                    let sampleName = data.loadedSamples?.[instr.id];
+                    if (typeof sampleName === 'string') {
+                        currentLoadedSamples[instr.id] = sanitizeHTML(sampleName); // Sanitize the name
+                        samples[instr.id] = globallyLoadedSampleBuffers[currentLoadedSamples[instr.id]] || null;
+                    } else {
                         currentLoadedSamples[instr.id] = null;
                         samples[instr.id] = null;
                     }
-                });
-            }
+                }
+            });
+            updateAllSynthSoundSelectors(); 
             populateDrumSampleSelectors(); 
 
-            if (data.drumSequence) { 
-                sequence = {}; 
-                instrumentDefs.forEach(instr => { 
-                    if (!instr.isSynth) { 
-                        sequence[instr.id] = Array(NUM_STEPS).fill(false); 
-                        if (data.drumSequence[instr.id]) { 
-                            for(let i=0; i < Math.min(data.drumSequence[instr.id].length, NUM_STEPS); i++) { 
-                                sequence[instr.id][i] = data.drumSequence[instr.id][i]; 
-                            } 
-                        } 
-                    } 
-                }); 
-            } else { 
-                sequence = {}; 
-                instrumentDefs.forEach(instr => { 
-                    if (!instr.isSynth) sequence[instr.id] = Array(NUM_STEPS).fill(false); 
-                }); 
-            } 
+            // Validate and apply sequence data
+            instrumentDefs.forEach(instr => {
+                if (instr.isSynth) {
+                    const synthSeq = data.synthSequences?.[instr.synthType];
+                    synthSequences[instr.synthType] = Array(NUM_STEPS).fill('-');
+                    if (Array.isArray(synthSeq) && synthSeq.length > 0) {
+                        for(let i=0; i < Math.min(synthSeq.length, NUM_STEPS); i++) {
+                            if(typeof synthSeq[i] === 'string') synthSequences[instr.synthType][i] = sanitizeHTML(synthSeq[i]); // Sanitize
+                        }
+                    }
+                } else {
+                    const drumSeq = data.drumSequence?.[instr.id];
+                    sequence[instr.id] = Array(NUM_STEPS).fill(false);
+                    if (Array.isArray(drumSeq) && drumSeq.length > 0) {
+                        for(let i=0; i < Math.min(drumSeq.length, NUM_STEPS); i++) {
+                            if(typeof drumSeq[i] === 'boolean') sequence[instr.id][i] = drumSeq[i];
+                        }
+                    }
+                }
+            });
             
-            if (data.synthSequences) { 
-                synthSequences = { bass: [], pluck: [], lead: [], pad: [] }; 
-                instrumentDefs.forEach(instr => { 
-                    if (instr.isSynth) { 
-                        synthSequences[instr.synthType] = Array(NUM_STEPS).fill('-'); 
-                        if (data.synthSequences[instr.synthType]) { 
-                            for(let i=0; i < Math.min(data.synthSequences[instr.synthType].length, NUM_STEPS); i++) { 
-                                synthSequences[instr.synthType][i] = data.synthSequences[instr.synthType][i]; 
-                            } 
-                        } 
-                    } 
-                }); 
-            } else { 
-                synthSequences = { 
-                    bass: Array(NUM_STEPS).fill('-'), pluck: Array(NUM_STEPS).fill('-'), 
-                    lead: Array(NUM_STEPS).fill('-'), pad: Array(NUM_STEPS).fill('-') 
-                }; 
-            } 
-            
-            if (oldNumSteps !== NUM_STEPS || (document.getElementById(`${instrumentDefs[0].id}Steps`) && document.getElementById(`${instrumentDefs[0].id}Steps`).children.length !== NUM_STEPS) ) {
+            // Rebuild grid if needed and update visuals
+            if (oldNumSteps !== NUM_STEPS || (document.getElementById(`${instrumentDefs[0].id}Steps`)?.children.length !== NUM_STEPS) ) {
                 createSequencerGrid();
             }
             updateAllStepVisuals(); 
-            if (!isInternalRiffLoad && !isExternalFileLoad) { 
-                alert("Pattern applied!"); 
-            } 
+            return true; // Indicate success
         }
 
         function updateAllStepVisuals() { instrumentDefs.forEach(instr => { const stepsContainer = document.getElementById(`${instr.id}Steps`); if (!stepsContainer || stepsContainer.children.length !== NUM_STEPS) return; const steps = Array.from(stepsContainer.children); if (instr.isSynth) { const currentSeqArray = synthSequences[instr.synthType]; if (currentSeqArray && currentSeqArray.length === NUM_STEPS) { steps.forEach((stepDiv, i) => { const isActive = currentSeqArray[i] !== '-'; stepDiv.classList.toggle('active', isActive); const select = stepDiv.querySelector('select'); if (select) select.value = currentSeqArray[i]; }); } } else { const currentSeqArray = sequence[instr.id]; if (currentSeqArray && currentSeqArray.length === NUM_STEPS) { steps.forEach((stepDiv, i) => { stepDiv.classList.toggle('active', currentSeqArray[i]); }); } } }); }
@@ -1143,7 +1166,6 @@
                 return; // Exit without changing any state.
             }
             
-            // Now that we know it can play, set the state.
             isSongModePlaying = true;
             playSongBtn.textContent = 'Stop Song';
             playStopBtn.disabled = true;
@@ -1154,7 +1176,7 @@
             visualStep = 0;
             if (!loadRiffDataForPlayback(songPlaybackStructure[currentSongPartIndex])) {
                 alert(`Failed to load initial riff ${songPlaybackStructure[currentSongPartIndex]} for song.`);
-                stopSongPlayback(); // This case is different, playback was attempted but failed, so stopping is OK.
+                stopSongPlayback();
                 return;
             }
             if (audioContext.state === 'suspended') audioContext.resume();
@@ -1190,16 +1212,25 @@
             reader.onload = (e) => {
                 try {
                     const importedSounds = JSON.parse(e.target.result);
+                    // SECURITY: Validate imported data structure
+                    if (typeof importedSounds !== 'object' || importedSounds === null) {
+                        throw new Error("Invalid format: file is not a JSON object.");
+                    }
                     for (const synthType in importedSounds) {
                         if (customSynthSoundDefinitions.hasOwnProperty(synthType)) {
-                            Object.assign(customSynthSoundDefinitions[synthType], importedSounds[synthType]);
+                            if (typeof importedSounds[synthType] !== 'object' || importedSounds[synthType] === null) continue;
+                            for (const soundName in importedSounds[synthType]) {
+                                // Sanitize the name and assign the (unvalidated) parameters
+                                const safeSoundName = sanitizeHTML(soundName);
+                                customSynthSoundDefinitions[synthType][safeSoundName] = importedSounds[synthType][soundName];
+                            }
                         }
                     }
                     updateAllSynthSoundSelectors(); 
                     alert("Custom synth sounds imported successfully!");
                 } catch (err) {
                     console.error("Error importing synth sounds:", err);
-                    alert("Could not import synth sounds: Invalid file format.");
+                    alert(`Could not import synth sounds: ${err.message}`);
                 }
             };
             reader.readAsText(file);
@@ -1246,12 +1277,21 @@
             reader.onload = (e) => {
                 try {
                     const importedScales = JSON.parse(e.target.result);
-                    scales = { ...scales, ...importedScales }; 
+                    // SECURITY: Validate imported data structure
+                    if (typeof importedScales !== 'object' || importedScales === null) {
+                        throw new Error("Invalid format: file is not a JSON object.");
+                    }
+                    for (const scaleName in importedScales) {
+                        const scaleData = importedScales[scaleName];
+                        if (Array.isArray(scaleData) && scaleData.every(n => typeof n === 'number' && n >= 0 && n < 12)) {
+                            scales[sanitizeHTML(scaleName)] = scaleData;
+                        }
+                    }
                     populateGlobalScaleSelector(); 
                     alert("Scales imported successfully!");
                 } catch (err) {
                     console.error("Error importing scales:", err);
-                    alert("Could not import scales: Invalid file format.");
+                    alert(`Could not import scales: ${err.message}`);
                 }
             };
             reader.readAsText(file);
