@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Synthwave Sequencer</title>
+    <title>Retro Arcade Sequencer</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto+Mono&display=swap');
         
@@ -104,9 +104,17 @@
 
         .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
-        .sequencer { display: grid; grid-template-columns: 170px auto; gap: 5px; padding: 10px; background-color: rgba(26, 9, 51, 0.5); border-radius: 8px; box-shadow: var(--border-glow); width: 95%; max-width: 1200px; overflow-x: auto; margin-top: 5px; }
-        .row-label { font-family: 'Orbitron', sans-serif; font-size: 0.8em; padding: 5px; text-align: right; color: var(--accent-color); display: flex; flex-direction: column; align-items: flex-end; justify-content: space-between; gap: 2px; }
-        .row-label .instrument-name-file { display: flex; flex-direction: column; align-items: flex-end; margin-bottom: 1px;}
+        .sequencer { display: grid; grid-template-columns: 220px auto; gap: 5px; padding: 10px; background-color: rgba(26, 9, 51, 0.5); border-radius: 8px; box-shadow: var(--border-glow); width: 95%; max-width: 1200px; overflow-x: auto; margin-top: 5px; }
+        .row-label { font-family: 'Orbitron', sans-serif; font-size: 0.8em; padding: 5px; text-align: right; color: var(--accent-color); display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 6px; }
+        
+        .instrument-main-info { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+        .toggle-row-details-btn { font-family: 'Roboto Mono', monospace; font-size: 0.9em; font-weight: bold; background: none; border: 1px solid var(--secondary-color); border-radius: 3px; color: var(--secondary-color); cursor: pointer; padding: 0px 5px; margin-left: 8px; }
+        .toggle-row-details-btn:hover { background: var(--secondary-color); color: var(--bg-color); }
+
+        .row-details-content { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; width: 100%; }
+        .row-details-content.collapsed { display: none; }
+
+        .row-label .instrument-name-file { display: flex; flex-direction: column; align-items: flex-end; margin-bottom: 1px; flex-grow: 1; }
         .row-label .instrument-name-file > span { margin-bottom: 2px;} 
         .row-label .synth-sound-selector, .row-label .drum-sample-selector { 
             font-family: 'Orbitron', sans-serif; font-size: 0.85em; padding: 1px 4px; 
@@ -140,6 +148,24 @@
         .row-actions { display: flex; gap: 5px; width: 100%; margin-top: 3px; }
         .row-actions button { font-family: 'Orbitron', sans-serif; padding: 5px 0; border: 1px solid var(--secondary-color); background-color: var(--bg-color); color: var(--secondary-color); cursor: pointer; border-radius: 5px; transition: all 0.3s ease; box-shadow: 0 0 5px var(--secondary-color); font-size: 0.8em; flex-grow: 1; text-align: center; }
         .row-actions button:hover { background-color: var(--secondary-color); color: var(--bg-color); box-shadow: 0 0 8px var(--primary-color), 0 0 15px var(--primary-color); }
+        
+        .row-midi-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; justify-content: flex-end; width: 100%; }
+        .row-midi-controls label { font-size: 0.7em; color: var(--secondary-color); flex-shrink: 0; }
+        .row-midi-controls .midi-device-select, .row-midi-controls .midi-channel-select {
+            font-family: 'Roboto Mono', monospace; font-size: 0.7em; padding: 1px 2px; border: 1px solid var(--secondary-color);
+            background-color: var(--bg-color); color: var(--secondary-color); border-radius: 3px; max-width: 75px; 
+            -webkit-appearance: none; -moz-appearance: none; appearance: none;
+            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2300F0FF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.4-5.4-12.8z%22%2F%3E%3C%2Fsvg%3E');
+            background-repeat: no-repeat; background-position: right 3px center; background-size: .5em auto; padding-right: 1em;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .row-midi-controls .midi-channel-select { max-width: 40px; padding-right: 1em; }
+        .row-midi-controls .record-btn {
+            font-family: 'Orbitron', sans-serif; font-size: 0.7em; padding: 2px 5px; border: 1px solid var(--secondary-color);
+            background-color: var(--bg-color); color: var(--secondary-color); cursor: pointer; border-radius: 3px; transition: all 0.2s ease;
+        }
+        .row-midi-controls .record-btn:hover { background-color: var(--secondary-color); color: var(--bg-color); }
+        .row-midi-controls .record-btn.armed { background-color: #ff0000; color: var(--text-color); box-shadow: 0 0 5px #ff0000, 0 0 10px #ff0000; border-color: #ff0000; }
 
         .steps-container { display: grid; gap: 4px; align-items: center; min-width: calc(1 * (30px + 4px)); }
         .step { width: 30px; height: 30px; background-color: #333; border: 1px solid #555; cursor: pointer; transition: background-color: 0.1s ease, box-shadow 0.2s ease; border-radius: 3px; display: flex; align-items: center; justify-content: center; }
@@ -155,7 +181,7 @@
     </style>
 </head>
 <body>
-    <h1>Synthwave Sequencer <span id="currentRiffDisplay"></span></h1>
+    <h1>Retro Arcade Sequencer <span id="currentRiffDisplay"></span></h1>
 
     <div class="collapsible-container">
         <h2 class="section-header">Main Controls <span class="toggle-indicator">[ - ]</span></h2>
@@ -240,7 +266,7 @@
 
 
     <div class="footer">
-        <p>Load .wav samples or use built-in/imported synth sounds. Synths are built-in.</p>
+        <p>Use built-in/imported synth sounds, load .wav samples, or control external MIDI devices.</p>
         <p>Samples loaded in a session are available for all drum tracks. Riff files save sample *names*, not audio data.</p>
         <p>Save/Load Riff pattern (.json or .swsseq). Export/Import custom Synth Sounds (.swssynth) and Scales (.swsscale).</p>
     </div>
@@ -314,6 +340,14 @@
         let isSongModePlaying = false;
         let songPlaybackStructure = []; 
         let currentSongPartIndex = 0;   
+        
+        // --- MIDI Variables ---
+        let midiAccess = null;
+        let midiInputs = new Map();
+        let midiOutputs = new Map();
+        let rowMidiSettings = {};
+        const midiNoteMap = { kick: 36, snare: 38, hihat: 42, cymbal: 49, tom1: 45, tom2: 47 };
+
 
         const playStopBtn = document.getElementById('playStopBtn');
         const tempoRangeSlider = document.getElementById('tempoRangeSlider'); const tempoInput = document.getElementById('tempoInput');
@@ -487,14 +521,28 @@
         function generateSequencerRowsHTML() { 
             sequencerRowsContainer.innerHTML = ''; 
             instrumentDefs.forEach(instr => { 
-                const rowLabelDiv = document.createElement('div'); rowLabelDiv.classList.add('row-label'); 
-                const nameFileDiv = document.createElement('div'); nameFileDiv.classList.add('instrument-name-file'); 
-                const nameSpan = document.createElement('span'); nameSpan.textContent = instr.name; 
-                nameFileDiv.appendChild(nameSpan); 
+                const rowLabelDiv = document.createElement('div');
+                rowLabelDiv.classList.add('row-label');
+                
+                // --- Containers for Collapsible Row Controls ---
+                const instrumentMainInfo = document.createElement('div');
+                instrumentMainInfo.classList.add('instrument-main-info');
+
+                const rowDetailsContent = document.createElement('div');
+                rowDetailsContent.classList.add('row-details-content', 'collapsed');
+
+                // --- Part 1: Always Visible Content ---
+                const nameFileDiv = document.createElement('div');
+                nameFileDiv.classList.add('instrument-name-file');
+                const nameSpan = document.createElement('span');
+                nameSpan.textContent = instr.name;
+                nameFileDiv.appendChild(nameSpan);
+
                 if (instr.isSynth) { 
                     const soundSelect = document.createElement('select'); 
                     const synthTypeKey = instr.synthType || instr.id; 
-                    soundSelect.id = `${synthTypeKey}SoundSelector`; soundSelect.classList.add('synth-sound-selector'); 
+                    soundSelect.id = `${synthTypeKey}SoundSelector`;
+                    soundSelect.classList.add('synth-sound-selector'); 
                     soundSelect.addEventListener('change', (e) => { 
                         currentSynthSounds[synthTypeKey] = e.target.value; 
                         if (synthTypeKey === 'pad' && (isPlaying || isSongModePlaying) && audioContext) { 
@@ -503,8 +551,25 @@
                             if (activeChord !== '-') playPadChord(activeChord, audioContext.currentTime + 0.06); 
                         } 
                     }); 
-                    nameFileDiv.appendChild(soundSelect); 
-                } else { 
+                    nameFileDiv.appendChild(soundSelect);
+                } 
+
+                const toggleDetailsBtn = document.createElement('button');
+                toggleDetailsBtn.classList.add('toggle-row-details-btn');
+                toggleDetailsBtn.textContent = '[+]';
+                toggleDetailsBtn.title = 'Show/Hide Details';
+                toggleDetailsBtn.addEventListener('click', (e) => {
+                    const button = e.target;
+                    const detailsPanel = button.closest('.row-label').querySelector('.row-details-content');
+                    detailsPanel.classList.toggle('collapsed');
+                    button.textContent = detailsPanel.classList.contains('collapsed') ? '[+]' : '[-]';
+                });
+                
+                instrumentMainInfo.appendChild(nameFileDiv);
+                instrumentMainInfo.appendChild(toggleDetailsBtn);
+                
+                // --- Part 2: Collapsible Details Content ---
+                if (!instr.isSynth) { // Drum sample selector and load button
                     const sampleSelect = document.createElement('select');
                     sampleSelect.id = `${instr.id}SampleSelector`;
                     sampleSelect.classList.add('drum-sample-selector');
@@ -517,14 +582,13 @@
                         } else if (selectedFileName) {
                             samples[instr.id] = null;
                             currentLoadedSamples[instr.id] = selectedFileName;
-                             alert(`Sample "${selectedFileName}" for ${instr.name} is not loaded. Please use the 'Load...' button to load it.`);
-                        }
-                         else {
+                            alert(`Sample "${selectedFileName}" for ${instr.name} is not loaded. Please use the 'Load...' button to load it.`);
+                        } else {
                             samples[instr.id] = null;
                             currentLoadedSamples[instr.id] = null;
                         }
                     });
-                    nameFileDiv.appendChild(sampleSelect);
+                    rowDetailsContent.appendChild(sampleSelect);
 
                     const loadButton = document.createElement('button');
                     loadButton.classList.add('load-sample-for-row-btn');
@@ -535,30 +599,72 @@
                         instrumentToLoadFor = instr.id;
                         hiddenSampleLoader.click();
                     });
-                    nameFileDiv.appendChild(loadButton);
-                } 
-                rowLabelDiv.appendChild(nameFileDiv); 
-                const volumeControlsDiv = document.createElement('div'); volumeControlsDiv.classList.add('row-volume-controls'); 
+                    rowDetailsContent.appendChild(loadButton);
+                }
+                
+                const volumeControlsDiv = document.createElement('div');
+                volumeControlsDiv.classList.add('row-volume-controls'); 
                 const volRange = document.createElement('input'); volRange.type = 'range'; volRange.id = `${instr.id}VolumeRange`; volRange.classList.add('row-volume-slider'); volRange.min = "0"; volRange.max = "1"; volRange.step = "0.01"; volRange.value = rowVolumes[instr.id] !== undefined ? rowVolumes[instr.id] : instr.defaultVol; volRange.title = `${instr.name} Volume`; 
                 const volInput = document.createElement('input'); volInput.type = 'number'; volInput.id = `${instr.id}VolumeInput`; volInput.classList.add('row-volume-input'); volInput.min = "0"; volInput.max = "1"; volInput.step = "0.01"; volInput.value = volRange.value; volInput.title = `${instr.name} Volume Value`; 
                 volRange.addEventListener('input', (e) => handleRowVolumeChange(instr.id, parseFloat(e.target.value))); 
                 volInput.addEventListener('input', (e) => { let val = parseFloat(e.target.value); if (!isNaN(val)) handleRowVolumeChange(instr.id, Math.max(0, Math.min(1, val))); }); 
                 volInput.addEventListener('change', (e) => { let val = parseFloat(e.target.value); val = isNaN(val) ? (rowVolumes[instr.id] !== undefined ? rowVolumes[instr.id] : instr.defaultVol) : Math.max(0, Math.min(1, val)); e.target.value = val.toFixed(2); handleRowVolumeChange(instr.id, val); }); 
                 volumeControlsDiv.appendChild(volRange); volumeControlsDiv.appendChild(volInput); 
-                rowLabelDiv.appendChild(volumeControlsDiv); 
-                const rowActionsDiv = document.createElement('div'); rowActionsDiv.classList.add('row-actions'); 
+                rowDetailsContent.appendChild(volumeControlsDiv); 
+                
+                const rowActionsDiv = document.createElement('div');
+                rowActionsDiv.classList.add('row-actions'); 
                 const randomBtn = document.createElement('button'); randomBtn.textContent = 'RND'; randomBtn.title = `Randomize ${instr.name}`; randomBtn.addEventListener('click', () => randomizeRow(instr)); 
                 rowActionsDiv.appendChild(randomBtn); 
                 const clearRowBtn = document.createElement('button'); clearRowBtn.textContent = 'CLR'; clearRowBtn.title = `Clear ${instr.name}`; clearRowBtn.addEventListener('click', () => clearSingleRow(instr)); 
                 rowActionsDiv.appendChild(clearRowBtn); 
-                rowLabelDiv.appendChild(rowActionsDiv); 
+                rowDetailsContent.appendChild(rowActionsDiv); 
+                
+                const rowMidiControlsDiv = document.createElement('div');
+                rowMidiControlsDiv.classList.add('row-midi-controls');
+                const midiInLabel = document.createElement('label'); midiInLabel.textContent = 'In:'; midiInLabel.htmlFor = `${instr.id}MidiIn`;
+                const midiInSelect = document.createElement('select'); midiInSelect.id = `${instr.id}MidiIn`; midiInSelect.classList.add('midi-device-select', 'midi-in-select'); midiInSelect.title = `MIDI Input for ${instr.name}`; midiInSelect.innerHTML = '<option value="">- None -</option>';
+                midiInSelect.addEventListener('change', e => { rowMidiSettings[instr.id].in = e.target.value; });
+                const recordBtn = document.createElement('button'); recordBtn.id = `${instr.id}RecordBtn`; recordBtn.classList.add('record-btn'); recordBtn.textContent = 'REC'; recordBtn.title = `Arm for MIDI Recording on ${instr.name}`;
+                recordBtn.addEventListener('click', () => {
+                    const isArmed = !rowMidiSettings[instr.id].record;
+                    if (instr.isSynth && instr.synthType === 'pad' && isArmed) {
+                        alert("MIDI recording is not supported for Pad tracks.");
+                        return;
+                    }
+                    rowMidiSettings[instr.id].record = isArmed;
+                    recordBtn.classList.toggle('armed', rowMidiSettings[instr.id].record);
+                });
+                const midiOutLabel = document.createElement('label'); midiOutLabel.textContent = 'Out:'; midiOutLabel.htmlFor = `${instr.id}MidiOut`;
+                const midiOutSelect = document.createElement('select'); midiOutSelect.id = `${instr.id}MidiOut`; midiOutSelect.classList.add('midi-device-select', 'midi-out-select'); midiOutSelect.title = `MIDI Output for ${instr.name}`; midiOutSelect.innerHTML = '<option value="">- None -</option>';
+                midiOutSelect.addEventListener('change', e => { rowMidiSettings[instr.id].out = e.target.value; });
+                const midiChLabel = document.createElement('label'); midiChLabel.textContent = 'Ch:'; midiChLabel.htmlFor = `${instr.id}MidiCh`;
+                const midiChSelect = document.createElement('select'); midiChSelect.id = `${instr.id}MidiCh`; midiChSelect.classList.add('midi-channel-select'); midiChSelect.title = `MIDI Channel for ${instr.name}`;
+                for (let i = 1; i <= 16; i++) {
+                    const option = document.createElement('option'); option.value = i; option.textContent = i;
+                    midiChSelect.appendChild(option);
+                }
+                midiChSelect.addEventListener('change', e => { rowMidiSettings[instr.id].channel = parseInt(e.target.value); });
+                rowMidiControlsDiv.appendChild(midiInLabel); rowMidiControlsDiv.appendChild(midiInSelect); rowMidiControlsDiv.appendChild(recordBtn);
+                rowMidiControlsDiv.appendChild(midiOutLabel); rowMidiControlsDiv.appendChild(midiOutSelect); rowMidiControlsDiv.appendChild(midiChLabel); rowMidiControlsDiv.appendChild(midiChSelect);
+                rowDetailsContent.appendChild(rowMidiControlsDiv);
+                
+                // --- Part 3: Assembly ---
+                rowLabelDiv.appendChild(instrumentMainInfo);
+                rowLabelDiv.appendChild(rowDetailsContent);
+
                 sequencerRowsContainer.appendChild(rowLabelDiv); 
-                const stepsContainer = document.createElement('div'); stepsContainer.classList.add('steps-container'); stepsContainer.id = `${instr.id}Steps`; 
+                const stepsContainer = document.createElement('div');
+                stepsContainer.classList.add('steps-container');
+                stepsContainer.id = `${instr.id}Steps`; 
                 sequencerRowsContainer.appendChild(stepsContainer); 
+                
                 if(rowVolumes[instr.id] === undefined) rowVolumes[instr.id] = instr.defaultVol; 
             }); 
+            
             updateAllSynthSoundSelectors(); 
             populateDrumSampleSelectors();
+            populateMidiDeviceSelectors();
         }
 
         function createSequencerGrid() { 
@@ -935,7 +1041,61 @@
         function stopAllPadSounds(fadeOutTime = 0.5) { if (!audioContext) return; currentPadSoundSources.forEach(source => { if (source.gain && source.gain.gain) { source.gain.gain.cancelScheduledValues(audioContext.currentTime); source.gain.gain.setValueAtTime(source.gain.gain.value, audioContext.currentTime); source.gain.gain.linearRampToValueAtTime(0.0001, audioContext.currentTime + fadeOutTime); } if (source.osc) { source.osc.stop(audioContext.currentTime + fadeOutTime + 0.05); try {source.osc.disconnect(); } catch(e){}} if(source.gain) {try{source.gain.disconnect();} catch(e){}} }); currentPadSoundSources = []; }
         function noteToFrequency(noteName) { return 440 * Math.pow(2, ({ 'C':0, 'C#':1, 'D':2, 'D#':3, 'E':4, 'F':5, 'F#':6, 'G':7, 'G#':8, 'A':9, 'A#':10, 'B':11 }[noteName.slice(0,-1)] + (parseInt(noteName.slice(-1)) - 4) * 12) / 12); }
         function midiNoteToFrequency(midiNote) { return 440 * Math.pow(2, (midiNote - 69) / 12); }
-        function scheduleNextNotes() { instrumentDefs.forEach(instr => { if (instr.isSynth) { if (instr.synthType === 'pad') { const padChord = synthSequences.pad[currentStep]; if (padChord !== '-') { playPadChord(padChord, nextNoteTime); } } else { const synthNote = synthSequences[instr.synthType][currentStep]; if (synthNote !== '-') playSynthNote(instr.id, synthNote, nextNoteTime); } } else if (sequence[instr.id] && sequence[instr.id][currentStep]) { playSound(instr.id, nextNoteTime); } }); }
+        function scheduleNextNotes() {
+            instrumentDefs.forEach(instr => {
+                let isStepActive = false;
+                let noteToPlay = null; // For synth notes
+                
+                // Determine if step is active and get note/chord
+                if (instr.isSynth) {
+                    noteToPlay = synthSequences[instr.synthType][currentStep];
+                    isStepActive = (noteToPlay !== '-');
+                } else {
+                    isStepActive = sequence[instr.id] && sequence[instr.id][currentStep];
+                }
+
+                // Play internal sound if active
+                if (isStepActive) {
+                    if (instr.isSynth) {
+                        if (instr.synthType === 'pad') {
+                            playPadChord(noteToPlay, nextNoteTime);
+                        } else {
+                            playSynthNote(instr.id, noteToPlay, nextNoteTime);
+                        }
+                    } else {
+                        playSound(instr.id, nextNoteTime);
+                    }
+                }
+                
+                // MIDI OUT LOGIC
+                const midiSettings = rowMidiSettings[instr.id];
+                const output = midiSettings && midiSettings.out ? midiOutputs.get(midiSettings.out) : null;
+                
+                if (isStepActive && output) {
+                    const channel = parseInt(midiSettings.channel) - 1;
+                    const velocity = 100;
+
+                    if (instr.isSynth) {
+                        if (instr.synthType === 'pad') {
+                            const chordMidiNotes = getChordNotes(noteToPlay, false).map(n => noteToMidi(n)).filter(n => n !== null);
+                            if(chordMidiNotes.length > 0) {
+                                sendMidiChord(output, channel, chordMidiNotes, velocity, nextNoteTime);
+                            }
+                        } else {
+                            const midiNote = noteToMidi(noteToPlay);
+                            if (midiNote !== null) {
+                                sendMidiNote(output, channel, midiNote, velocity, nextNoteTime);
+                            }
+                        }
+                    } else { // Drum
+                        const midiNote = midiNoteMap[instr.id];
+                        if (midiNote !== null) {
+                            sendMidiNote(output, channel, midiNote, velocity, nextNoteTime);
+                        }
+                    }
+                }
+            });
+        }
         function mainScheduler() { if (!isPlaying && !isSongModePlaying) { clearTimeout(schedulerIntervalId); schedulerIntervalId = null; return; } let currentPlaybackNUM_STEPS = NUM_STEPS; if (isSongModePlaying) { const currentRiffIdForPlayback = songPlaybackStructure[currentSongPartIndex]; const riffData = songRiffs[currentRiffIdForPlayback]; if (riffData) currentPlaybackNUM_STEPS = riffData.numSteps; else { stopSongPlayback(); alert(`Error: Riff ${currentRiffIdForPlayback} data not found for song playback.`); return; } } while (nextNoteTime < audioContext.currentTime + scheduleAheadTime) { scheduleNextNotes(); nextNoteTime += (60.0 / bpm) / 4; currentStep = (currentStep + 1); if (currentStep >= currentPlaybackNUM_STEPS) { currentStep = 0; if (isSongModePlaying) { currentSongPartIndex = (currentSongPartIndex + 1); if (currentSongPartIndex >= songPlaybackStructure.length) { currentSongPartIndex = 0; } loadRiffDataForPlayback(songPlaybackStructure[currentSongPartIndex]); const newRiffData = songRiffs[songPlaybackStructure[currentSongPartIndex]]; currentPlaybackNUM_STEPS = newRiffData ? newRiffData.numSteps : NUM_STEPS; if (visualUpdateIntervalId) { clearInterval(visualUpdateIntervalId); visualStep = 0; startVisualUpdates(); } } } } if (isPlaying || isSongModePlaying) { schedulerIntervalId = setTimeout(mainScheduler, lookahead); } }
         let visualUpdateIntervalId = null; let visualStep = 0; 
         function startVisualUpdates() { const stepInterval = (60.0 / bpm / 4) * 1000; if (visualUpdateIntervalId) clearInterval(visualUpdateIntervalId); let currentVisualNUM_STEPS = NUM_STEPS; if(isSongModePlaying && songRiffs[songPlaybackStructure[currentSongPartIndex]]) { currentVisualNUM_STEPS = songRiffs[songPlaybackStructure[currentSongPartIndex]].numSteps; } if ((isPlaying || isSongModePlaying) && audioContext.currentTime > nextNoteTime - (stepInterval/1000) ){ visualStep = currentStep; } else { visualStep = (currentStep -1 + currentVisualNUM_STEPS) % currentVisualNUM_STEPS; } visualUpdateIntervalId = setInterval(() => { if (!isPlaying && !isSongModePlaying) { clearInterval(visualUpdateIntervalId); visualUpdateIntervalId = null; document.querySelectorAll('.step.current').forEach(s => s.classList.remove('current')); return; } let currentIntervalNUM_STEPS = NUM_STEPS; if(isSongModePlaying && songRiffs[songPlaybackStructure[currentSongPartIndex]]) { currentIntervalNUM_STEPS = songRiffs[songPlaybackStructure[currentSongPartIndex]].numSteps; } document.querySelectorAll('.step.current').forEach(s => s.classList.remove('current')); instrumentDefs.forEach(instr => { const stepsContainer = document.getElementById(`${instr.id}Steps`); if (stepsContainer && stepsContainer.children.length === currentIntervalNUM_STEPS) { const steps = stepsContainer.children; if (steps[visualStep]) steps[visualStep].classList.add('current'); } }); visualStep = (visualStep + 1) % currentIntervalNUM_STEPS; }, stepInterval); }
@@ -954,7 +1114,7 @@
         function clearAllSequencerData(confirmNeeded = true) { let doClear = true; if (confirmNeeded) { doClear = confirm("Are you sure you want to clear the ENTIRE current riff?"); } if (doClear) { instrumentDefs.forEach(instr => clearSingleRow(instr)); if (isPlaying) { playStop(); } if (isSongModePlaying) { stopSongPlayback(); } currentStep = 0; visualStep = 0; if (audioContext) { nextNoteTime = audioContext.currentTime + 0.05; stopAllPadSounds(0.1); } else { nextNoteTime = 0.05; } document.querySelectorAll('.step.current').forEach(s => s.classList.remove('current')); } return doClear; }
         clearPatternBtn.addEventListener('click', () => clearAllSequencerData(true));
         function getPatternData() { return { version: "1.4", riffId: currentEditingRiffId, bpm: bpm, numSteps: NUM_STEPS, masterVolume: masterGainNode ? masterGainNode.gain.value : 0.8, globalRootNote: currentGlobalRootNote, globalScale: currentGlobalScale, rowVolumes: { ...rowVolumes }, currentSynthSounds: { ...currentSynthSounds }, drumSequence: JSON.parse(JSON.stringify(sequence)), synthSequences: JSON.parse(JSON.stringify(synthSequences)), loadedSamples: { ...currentLoadedSamples } }; }
-        function saveRiffPatternToFile() { const dataToSave = getPatternData(); const jsonData = JSON.stringify(dataToSave, null, 2); const blob = new Blob([jsonData], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `synthwave_riff_${currentEditingRiffId}_${new Date().toISOString().slice(0,10)}.swsseq`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); }
+        function saveRiffPatternToFile() { const dataToSave = getPatternData(); const jsonData = JSON.stringify(dataToSave, null, 2); const blob = new Blob([jsonData], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `retroarcade_riff_${currentEditingRiffId}_${new Date().toISOString().slice(0,10)}.swsseq`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); }
         
         function loadRiffPatternFromFile(event) { 
             const file = event.target.files[0]; if (!file) return; 
@@ -1078,8 +1238,9 @@
         function refinePadProgression() { for (let i = 1; i < NUM_STEPS; i++) { if (synthSequences.pad[i] !== '-' && synthSequences.pad[i] === synthSequences.pad[i - 1]) { synthSequences.pad[i] = '-'; } } for (let i = 2; i < NUM_STEPS; i++) { if (synthSequences.pad[i] !== '-' && synthSequences.pad[i-2] !== '-' && synthSequences.pad[i] === synthSequences.pad[i - 2]) { synthSequences.pad[i] = '-'; } } }
         function generateCurrentRiffContent() { if (!confirm("This will clear the current riff and generate new content using the selected Key and Scale. Are you sure?")) { return; } if (isPlaying) playStop(); if (isSongModePlaying) stopSongPlayback(); instrumentDefs.forEach(instr => clearSingleRow(instr)); currentStep = 0; visualStep = 0; if (audioContext) nextNoteTime = audioContext.currentTime + 0.05; document.querySelectorAll('.step.current').forEach(s => s.classList.remove('current')); generatePadProgressionInternal(); generateBassLineInternal(); generateMelodyInternal('pluck'); if (Math.random() > 0.4) { generateMelodyInternal('lead'); } generateDrumPatternInternal('kick'); generateDrumPatternInternal('snare'); generateDrumPatternInternal('hihat'); if (Math.random() > 0.5) generateDrumPatternInternal('cymbal'); if (Math.random() > 0.7) generateDrumPatternInternal('tom1'); if (Math.random() > 0.8 && NUM_STEPS > 8) generateDrumPatternInternal('tom2'); refinePadProgression(); updateAllStepVisuals(); }
         function randomizeGlobalKeyScale() { const availableRootNotes = [...allNotes]; currentGlobalRootNote = availableRootNotes[Math.floor(Math.random() * availableRootNotes.length)]; globalRootNoteSelect.value = currentGlobalRootNote; const scaleKeys = Object.keys(scales); currentGlobalScale = scaleKeys[Math.floor(Math.random() * scaleKeys.length)]; globalScaleSelect.value = currentGlobalScale; }
-        const midiNoteMap = { kick: 36, snare: 38, hihat: 42, cymbal: 49, tom1: 45, tom2: 47 }; const PPQN = 480; function exportMIDI() { if (!audioContext) alert("Please interact with the sequencer (e.g., play) before exporting MIDI."); const ticksPerStep = PPQN / 4; let midiEvents = []; const microsecsPerQuarterNote = Math.round(60000000 / bpm); midiEvents.push([0, 0xFF, 0x51, 0x03, (microsecsPerQuarterNote >> 16) & 0xFF, (microsecsPerQuarterNote >> 8) & 0xFF, microsecsPerQuarterNote & 0xFF ]); instrumentDefs.forEach(instr => { if (instr.isSynth) { const currentSeqArray = synthSequences[instr.synthType]; let midiChannel = 0x90; if (instr.synthType === 'pluck') midiChannel = 0x91; else if (instr.synthType === 'lead') midiChannel = 0x92; else if (instr.synthType === 'pad') midiChannel = 0x93; if (instr.synthType === 'pad') { let activePadNotes = null; let lastChordPlayedAtTick = -1; for (let stepIndex = 0; stepIndex < NUM_STEPS; stepIndex++) { const chordName = currentSeqArray[stepIndex]; const startTimeTicks = stepIndex * ticksPerStep; if (chordName !== '-') { if (activePadNotes && startTimeTicks > lastChordPlayedAtTick) { activePadNotes.forEach(note => midiEvents.push([startTimeTicks -1, midiChannel - 0x10, note, 0])); } const parts = chordName.match(/([A-G]#?)([0-9]+)\s(maj|min)/); if (parts) { const rootMidi = noteToMidi(`${parts[1]}${parts[2]}`); const type = parts[3]; const intervals = type === 'maj' ? [0, 4, 7] : [0, 3, 7]; activePadNotes = intervals.map(interval => rootMidi + interval); activePadNotes.forEach(note => midiEvents.push([startTimeTicks, midiChannel, note, 70])); lastChordPlayedAtTick = startTimeTicks; } else { activePadNotes = null; } } else if (activePadNotes && startTimeTicks > lastChordPlayedAtTick) { activePadNotes.forEach(note => midiEvents.push([startTimeTicks -1, midiChannel - 0x10, note, 0])); activePadNotes = null; } } if (activePadNotes) { const endTimeTicks = NUM_STEPS * ticksPerStep; activePadNotes.forEach(note => midiEvents.push([endTimeTicks -1, midiChannel - 0x10, note, 0])); } } else { currentSeqArray.forEach((noteName, stepIndex) => { if (noteName !== '-') { const midiNote = noteToMidi(noteName); if (midiNote === null) return; const startTimeTicks = stepIndex * ticksPerStep; midiEvents.push([startTimeTicks, midiChannel, midiNote, (instr.synthType === 'pluck' ? 80 : 90) ]); midiEvents.push([startTimeTicks + ticksPerStep -1, midiChannel - 0x10, midiNote, 0]); } }); } } else { const midiNote = midiNoteMap[instr.id]; if (!midiNote || !sequence[instr.id]) return; sequence[instr.id].forEach((isActive, stepIndex) => { if (isActive) { const startTimeTicks = stepIndex * ticksPerStep; midiEvents.push([startTimeTicks, 0x99, midiNote, 100]); midiEvents.push([startTimeTicks + ticksPerStep -1 , 0x89, midiNote, 0]); } }); } }); midiEvents.sort((a,b)=>{if(a[0]!==b[0])return a[0]-b[0]; if((a[1]&0xF0)===0x80&&(b[1]&0xF0)===0x90)return -1; if((a[1]&0xF0)===0x90&&(b[1]&0xF0)===0x80)return 1; return 0;}); let lastTick=0; let finalMidiEvents=[]; for(const event of midiEvents){const deltaTime=event[0]-lastTick; lastTick=event[0]; finalMidiEvents.push([deltaTime, ...event.slice(1)]);} const endOfTrackDelta=(NUM_STEPS*ticksPerStep)-lastTick; finalMidiEvents.push([Math.max(0,endOfTrackDelta),0xFF,0x2F,0x00]); const trackChunks=[createTrackChunk(finalMidiEvents)]; const midiData=createMidiFile(trackChunks); downloadMIDI(midiData,`synthwave_riff_${currentEditingRiffId}.mid`);}
+        const PPQN = 480; function exportMIDI() { if (!audioContext) alert("Please interact with the sequencer (e.g., play) before exporting MIDI."); const ticksPerStep = PPQN / 4; let midiEvents = []; const microsecsPerQuarterNote = Math.round(60000000 / bpm); midiEvents.push([0, 0xFF, 0x51, 0x03, (microsecsPerQuarterNote >> 16) & 0xFF, (microsecsPerQuarterNote >> 8) & 0xFF, microsecsPerQuarterNote & 0xFF ]); instrumentDefs.forEach(instr => { if (instr.isSynth) { const currentSeqArray = synthSequences[instr.synthType]; let midiChannel = 0x90; if (instr.synthType === 'pluck') midiChannel = 0x91; else if (instr.synthType === 'lead') midiChannel = 0x92; else if (instr.synthType === 'pad') midiChannel = 0x93; if (instr.synthType === 'pad') { let activePadNotes = null; let lastChordPlayedAtTick = -1; for (let stepIndex = 0; stepIndex < NUM_STEPS; stepIndex++) { const chordName = currentSeqArray[stepIndex]; const startTimeTicks = stepIndex * ticksPerStep; if (chordName !== '-') { if (activePadNotes && startTimeTicks > lastChordPlayedAtTick) { activePadNotes.forEach(note => midiEvents.push([startTimeTicks -1, midiChannel - 0x10, note, 0])); } const parts = chordName.match(/([A-G]#?)([0-9]+)\s(maj|min)/); if (parts) { const rootMidi = noteToMidi(`${parts[1]}${parts[2]}`); const type = parts[3]; const intervals = type === 'maj' ? [0, 4, 7] : [0, 3, 7]; activePadNotes = intervals.map(interval => rootMidi + interval); activePadNotes.forEach(note => midiEvents.push([startTimeTicks, midiChannel, note, 70])); lastChordPlayedAtTick = startTimeTicks; } else { activePadNotes = null; } } else if (activePadNotes && startTimeTicks > lastChordPlayedAtTick) { activePadNotes.forEach(note => midiEvents.push([startTimeTicks -1, midiChannel - 0x10, note, 0])); activePadNotes = null; } } if (activePadNotes) { const endTimeTicks = NUM_STEPS * ticksPerStep; activePadNotes.forEach(note => midiEvents.push([endTimeTicks -1, midiChannel - 0x10, note, 0])); } } else { currentSeqArray.forEach((noteName, stepIndex) => { if (noteName !== '-') { const midiNote = noteToMidi(noteName); if (midiNote === null) return; const startTimeTicks = stepIndex * ticksPerStep; midiEvents.push([startTimeTicks, midiChannel, midiNote, (instr.synthType === 'pluck' ? 80 : 90) ]); midiEvents.push([startTimeTicks + ticksPerStep -1, midiChannel - 0x10, midiNote, 0]); } }); } } else { const midiNote = midiNoteMap[instr.id]; if (!midiNote || !sequence[instr.id]) return; sequence[instr.id].forEach((isActive, stepIndex) => { if (isActive) { const startTimeTicks = stepIndex * ticksPerStep; midiEvents.push([startTimeTicks, 0x99, midiNote, 100]); midiEvents.push([startTimeTicks + ticksPerStep -1 , 0x89, midiNote, 0]); } }); } }); midiEvents.sort((a,b)=>{if(a[0]!==b[0])return a[0]-b[0]; if((a[1]&0xF0)===0x80&&(b[1]&0xF0)===0x90)return -1; if((a[1]&0xF0)===0x90&&(b[1]&0xF0)===0x80)return 1; return 0;}); let lastTick=0; let finalMidiEvents=[]; for(const event of midiEvents){const deltaTime=event[0]-lastTick; lastTick=event[0]; finalMidiEvents.push([deltaTime, ...event.slice(1)]);} const endOfTrackDelta=(NUM_STEPS*ticksPerStep)-lastTick; finalMidiEvents.push([Math.max(0,endOfTrackDelta),0xFF,0x2F,0x00]); const trackChunks=[createTrackChunk(finalMidiEvents)]; const midiData=createMidiFile(trackChunks); downloadMIDI(midiData,`retroarcade_riff_${currentEditingRiffId}.mid`);}
         function noteToMidi(noteName) { if(noteName==='-')return null; const np=noteName.match(/([A-G]#?)([0-9])/); if(!np)return null; const p=np[1];const o=parseInt(np[2]); const nm={'C':0,'C#':1,'D':2,'D#':3,'E':4,'F':5,'F#':6,'G':7,'G#':8,'A':9,'A#':10,'B':11}; if(!(p in nm))return null; return nm[p]+(o+1)*12; }
+        function midiToNoteName(midiNote) { if (midiNote < 0 || midiNote > 127) return null; const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']; const octave = Math.floor(midiNote / 12) - 1; const noteIndex = midiNote % 12; return `${noteNames[noteIndex]}${octave}`; }
         function createTrackChunk(events) { let td=[]; events.forEach(e=>{let dt=e[0];let b=[];do{b.unshift(dt&0x7F);dt>>=7;}while(dt>0); b.forEach((val,i)=>{if(i<b.length-1)b[i]|=0x80;}); td.push(...b);td.push(...e.slice(1));}); let c=[0x4D,0x54,0x72,0x6B,(td.length>>24)&0xFF,(td.length>>16)&0xFF,(td.length>>8)&0xFF,td.length&0xFF,...td]; return c;}
         function createMidiFile(trackChunks) { let h=[0x4D,0x54,0x68,0x64,0,0,0,6,0,1,(trackChunks.length>>8)&0xFF,trackChunks.length&0xFF,(PPQN>>8)&0xFF,PPQN&0xFF]; let mb=[...h]; trackChunks.forEach(c=>mb.push(...c)); return new Uint8Array(mb);}
         function downloadFile(data, filename, type) { const blob = new Blob([data], { type: type }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); }
@@ -1316,6 +1477,129 @@
                 });
             });
         }
+        
+        // --- MIDI Functions ---
+        async function setupMIDI() {
+            if (navigator.requestMIDIAccess) {
+                try {
+                    midiAccess = await navigator.requestMIDIAccess({ sysex: false });
+                    console.log("MIDI ready!");
+                    midiAccess.onstatechange = updateMidiDevices;
+                    updateMidiDevices();
+                } catch (err) {
+                    console.error("Failed to get MIDI access", err);
+                    alert("Could not access MIDI devices. Please ensure your browser has permission and a device is connected.");
+                }
+            } else {
+                console.log("WebMIDI is not supported in this browser.");
+            }
+        }
+        function updateMidiDevices() {
+            midiInputs.forEach(input => input.onmidimessage = null);
+            midiInputs.clear();
+            midiOutputs.clear();
+
+            for (const input of midiAccess.inputs.values()) {
+                midiInputs.set(input.id, input);
+                input.onmidimessage = onMIDIMessage;
+            }
+            for (const output of midiAccess.outputs.values()) {
+                midiOutputs.set(output.id, output);
+            }
+            populateMidiDeviceSelectors();
+        }
+        function populateMidiDeviceSelectors() {
+            const allInSelects = document.querySelectorAll('.midi-in-select');
+            const allOutSelects = document.querySelectorAll('.midi-out-select');
+            
+            const populate = (selects, devicesMap) => {
+                selects.forEach(select => {
+                    const currentVal = select.value;
+                    select.innerHTML = '<option value="">- None -</option>';
+                    for (const device of devicesMap.values()) {
+                        const option = document.createElement('option');
+                        option.value = device.id;
+                        option.textContent = sanitizeHTML(device.name);
+                        select.appendChild(option);
+                    }
+                    if (devicesMap.has(currentVal)) {
+                        select.value = currentVal;
+                    }
+                });
+            };
+            
+            populate(allInSelects, midiInputs);
+            populate(allOutSelects, midiOutputs);
+        }
+        function onMIDIMessage(event) {
+            if (!isPlaying && !isSongModePlaying) return; // Only record while playing
+            
+            const data = event.data;
+            const command = data[0] >> 4;
+            const channel = data[0] & 0x0F;
+            const note = data[1];
+            const velocity = data[2];
+
+            if (command === 9 && velocity > 0) { // Note On
+                const recordStep = visualStep; // Use the visually updated step
+                
+                instrumentDefs.forEach(instr => {
+                    const settings = rowMidiSettings[instr.id];
+                    if (settings && settings.record && settings.in === event.target.id && (settings.channel - 1) === channel) {
+                        
+                        if (instr.isSynth) {
+                            if (instr.synthType === 'pad') return; // Pad recording not supported
+                            const noteName = midiToNoteName(note);
+                            if (!noteName) return;
+
+                            let noteRange;
+                            if (instr.synthType === 'bass') noteRange = bassNoteRange;
+                            else if (instr.synthType === 'pluck') noteRange = pluckNoteRange;
+                            else if (instr.synthType === 'lead') noteRange = leadNoteRange;
+
+                            if (noteRange && noteRange.includes(noteName)) {
+                                synthSequences[instr.synthType][recordStep] = noteName;
+                                const stepDiv = document.querySelector(`#${instr.id}Steps .step[data-step='${recordStep}']`);
+                                if (stepDiv) {
+                                    stepDiv.classList.add('active');
+                                    const select = stepDiv.querySelector('select');
+                                    if(select) select.value = noteName;
+                                }
+                            }
+
+                        } else { // Drum track
+                            if (note === midiNoteMap[instr.id]) {
+                                sequence[instr.id][recordStep] = true;
+                                const stepDiv = document.querySelector(`#${instr.id}Steps .step[data-step='${recordStep}']`);
+                                if (stepDiv) {
+                                    stepDiv.classList.add('active');
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+        function sendMidiNote(output, channel, midiNote, velocity, time) {
+            const noteOnMessage = [0x90 + channel, midiNote, velocity];
+            const noteOffMessage = [0x80 + channel, midiNote, 0];
+            const stepDurationMs = (60 / bpm / 4) * 1000;
+            const midiSendTime = window.performance.now() + (time - audioContext.currentTime) * 1000;
+            
+            output.send(noteOnMessage, midiSendTime);
+            output.send(noteOffMessage, midiSendTime + stepDurationMs - 15);
+        }
+        function sendMidiChord(output, channel, midiNotes, velocity, time) {
+             const stepDurationMs = (60 / bpm / 4) * 1000;
+             const midiSendTime = window.performance.now() + (time - audioContext.currentTime) * 1000;
+             midiNotes.forEach(midiNote => {
+                if (midiNote === null) return;
+                const noteOnMessage = [0x90 + channel, midiNote, velocity];
+                const noteOffMessage = [0x80 + channel, midiNote, 0];
+                output.send(noteOnMessage, midiSendTime);
+                output.send(noteOffMessage, midiSendTime + stepDurationMs - 15);
+             });
+        }
 
 
         playStopBtn.addEventListener('click', playStop); 
@@ -1341,6 +1625,7 @@
         window.onload = async () => {
             initializeCollapsibleSections();
             await loadDefaultSamples();
+            await setupMIDI(); // Initialize MIDI
 
             allNotes.forEach(note => { const option = document.createElement('option'); option.value = note; option.textContent = note; if (note === currentGlobalRootNote) option.selected = true; globalRootNoteSelect.appendChild(option); });
             populateGlobalScaleSelector(); 
@@ -1354,6 +1639,8 @@
                          samples[instr.id] = null; 
                      }
                 }
+                // Initialize MIDI settings for each row
+                rowMidiSettings[instr.id] = { in: '', out: '', channel: 1, record: false };
             });
 
             generateSequencerRowsHTML(); 
